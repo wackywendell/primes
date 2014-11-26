@@ -1,0 +1,12 @@
+[package]
+
+name = "primes"
+version = "0.1.0"
+authors = ["Wendell Smith <wendellwsmith@gmail.com>"]
+
+description = """
+A package for calculating primes using the Sieve of Eratosthenes, and using that to check if a 
+number is prime and calculating factors. Includes an iterator over all primes.
+"""
+
+license="BSD-3-Clause"
