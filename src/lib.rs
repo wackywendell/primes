@@ -1,8 +1,14 @@
 /*!
- * A basic library for finding primes, using the Sieve of Eratosthenes.
- * 
- * To use, see `PrimeSet`, a class which handles the Sieve and has multiple methods for iterating
- * over primes.
+A basic library for finding primes, using the Sieve of Eratosthenes. This library provides methods
+for generating primes, testing whether a number is prime, and factorizing numbers. Most methods
+generate primes lazily, so only enough primes will be generated for the given test, and primes are
+cached for later use.
+
+To use, see `PrimeSet`, a class which handles the Sieve and has multiple methods for iterating
+over primes.
+
+This also provides a few functions unconnected to `PrimeSet`, which will be faster for the first case,
+but slower in the long term as they do not use any caching of primes.
 */
 
 #[warn(non_camel_case_types)]
@@ -26,7 +32,10 @@ fn sqrt_floor(n : uint) -> uint {
     (n as f64).sqrt().floor() as uint
 }
 
-/// A prime generator, using the Sieve of Eratosthenes.
+/** A prime generator, using the Sieve of Eratosthenes.
+
+Create with `let mut pset = PrimeSet::new()`, and then use `pset.iter()` to iterate over all primes.
+**/
 pub struct PrimeSet {
     lst : Vec<uint>
 }
@@ -40,7 +49,7 @@ pub struct PrimeSetIter<'a> {
 }
 
 impl PrimeSet {
-    /// A new prime penerator, primed with 2 and 3
+    /// A new prime generator, primed with 2 and 3
     pub fn new() -> PrimeSet {
         PrimeSet{lst:vec!(2,3)}
     }
@@ -110,6 +119,8 @@ impl PrimeSet {
     }
     
     /// Check if a number is prime
+    /// Note that this only requires primes up to n.sqrt() to be generated, and will generate
+    /// them as necessary on its own.
     pub fn is_prime(&mut self, n: uint) -> bool {
         if n <= 1 {return false;}
         if n == 2 {return true;} // otherwise we get 2 % 2 == 0!
@@ -208,7 +219,9 @@ fn firstfac(x: uint) -> uint {
 }
 
 /// Find all prime factors of a number
+/// Does not use a PrimeSet, but simply counts upwards
 pub fn factors(x: uint) -> Vec<uint> {
+    if x <= 1 {return vec!()};
     let mut lst: Vec<uint> = Vec::new();
     let mut curn = x;
     loop  {
@@ -245,10 +258,8 @@ fn test_iter(){
     let first_few = [2u,3,5,7,11,13,17,19,23];
     for (m, &n) in pset.iter().zip(first_few.iter()) {
         assert_eq!(m, n);
-        break;
     }
 }
-
 
 #[test]
 fn test_primes(){
@@ -279,18 +290,29 @@ fn test_primes(){
 fn test_factors(){
 	let mut pset = PrimeSet::new();
 	
-	assert_eq!(pset.prime_factors(1), vec!());
-	assert_eq!(pset.prime_factors(2), vec!(2));
-	assert_eq!(pset.prime_factors(3), vec!(3));
-	assert_eq!(pset.prime_factors(4), vec!(2,2));
-	assert_eq!(pset.prime_factors(5), vec!(5));
-	assert_eq!(pset.prime_factors(6), vec!(2,3));
-	assert_eq!(pset.prime_factors(9), vec!(3,3));
+	let ns = [  (1, vec!()),
+                (2, vec!(2)),
+                (3, vec!(3)),
+                (4, vec!(2,2)),
+                (5, vec!(5)),
+                (6, vec!(2,3)),
+	            (9, vec!(3,3)),
+	            (12, vec!(2,2,3)),
+	            (121, vec!(11,11)),
+	            (144, vec!(2,2,2,2,3,3)),
+	            (10_000_000, vec!(2,2,2,2,2,2,2,5,5,5,5,5,5,5)),
+                (100, vec!(2,2,5,5)),
+                (121, vec!(11, 11)),
+                ];
+    
+    for &(n, ref v) in ns.iter(){
+        assert_eq!(pset.prime_factors(n), *v);
+        assert_eq!(factors(n), *v);
+    }
 	
 	pset = PrimeSet::new();
 	assert_eq!(pset.prime_factors(12), vec!(2,2,3));
-	assert_eq!(pset.prime_factors(100), vec!(2,2,5,5));
-	assert_eq!(pset.prime_factors(121), vec!(11, 11));
+	
 }
 
 
@@ -299,7 +321,7 @@ fn bench_primes(b : &mut Bencher){
 	b.iter(|| {
 		let mut pset = PrimeSet::new();
 		 let (_, _) = pset.find(1_000_000);
-		 //~ let (idx, n) = pset.find(10000000);
+		 //~ let (idx, n) = pset.find(1_000_000);
 		 //~ println!("Prime {}: {}", idx, n);
 		 })
 }
