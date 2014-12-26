@@ -104,7 +104,7 @@ impl PrimeSet {
     //~ }
     
     /// Iterator over just the primes found so far
-    pub fn iter_vec<'a>(&'a self) -> slice::Items<'a, uint> {
+    pub fn iter_vec<'a>(&'a self) -> slice::Iter<'a, uint> {
         self.lst.iter()
     }
     
