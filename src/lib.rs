@@ -1,14 +1,66 @@
 /*!
-A basic library for finding primes, using the Sieve of Eratosthenes. This library provides methods
-for generating primes, testing whether a number is prime, and factorizing numbers. Most methods
-generate primes lazily, so only enough primes will be generated for the given test, and primes are
-cached for later use.
 
-To use, see `PrimeSet`, a class which handles the Sieve and has multiple methods for iterating
-over primes.
+A basic library for finding primes, providing a basic Iterator over all primes. 
+It is not as fast as `slow_primes`, but it is meant to be easy to use!
 
-This also provides a few functions unconnected to `PrimeSet`, which will be faster for the first case,
-but slower in the long term as they do not use any caching of primes.
+The simplest usage is simply to create an `Iterator`:
+
+```
+use primes::PrimeSet;
+
+let mut pset = PrimeSet::new();
+
+for (ix, n) in pset.iter().enumerate().take(10) {
+    println!("Prime {}: {}", ix, n);
+}
+```
+
+This library provides methods for generating primes, testing whether a number
+is prime, and factorizing numbers. Most methods generate primes lazily, so
+only enough primes will be generated for the given test, and primes are cached
+for later use.
+
+To use, see `PrimeSet`, a class which handles the Sieve and has multiple
+methods for iterating over primes.
+
+This also provides a few functions unconnected to `PrimeSet`, which will be
+faster for the first case, but slower in the long term as they do not use any
+caching of primes.
+
+[*Source*](https://github.com/wackywendell/primes)
+
+# Example: Find the millionth prime
+
+```
+use primes::PrimeSet;
+
+let mut pset = PrimeSet::new();
+let (ix, n) = pset.find(1_000_000);
+
+println!("Prime {}: {}", ix, n);
+```
+
+# Example: Find the first ten primes *after* the thousandth prime
+```
+use primes::PrimeSet;
+
+let mut pset = PrimeSet::new();
+for (ix, n) in pset.iter().enumerate().skip(1_000).take(10) {
+    println!("Prime {}: {}", ix, n);
+}
+```
+
+# Example: Find the first prime greater than 1000
+```
+use primes::PrimeSet;
+
+let mut pset = PrimeSet::new();
+let (ix, n) = pset.find(1_000);
+println!("The first prime after 1000 is the {}th prime: {}", ix, n);
+
+assert_eq!(pset.find(n), (ix, n));
+```
+
 */
 
 #[warn(non_camel_case_types)]
@@ -93,7 +145,7 @@ impl PrimeSet {
     
     /// Return all primes found so far as a slice
     pub fn list<'a>(&'a self) -> &'a [u64] {
-        self.lst.as_slice()
+        &self.lst[]
     }
     
     /// Iterator over all primes not yet found
@@ -167,7 +219,7 @@ impl PrimeSet {
     
     /// Get the nth prime, even if we haven't yet found it
     pub fn get(&mut self, index : &usize) -> &u64 {
-		for _ in range(0, (*index as isize) + 1 - (self.lst.len() as isize)){
+		for _ in (0..(*index as isize) + 1 - (self.lst.len() as isize)){
 			self.expand();
 		}
         self.lst.index(index)
@@ -246,6 +298,7 @@ pub fn factors(x: u64) -> Vec<u64> {
 
 /// Find all unique prime factors of a number
 pub fn factors_uniq(x: u64) -> Vec<u64> {
+    if x <= 1 {return vec!()};
     let mut lst: Vec<u64> = Vec::new();
     let mut curn = x;
     loop  {
@@ -271,6 +324,30 @@ fn test_iter(){
     for (m, &n) in pset.iter().zip(first_few.iter()) {
         assert_eq!(m, n);
     }
+}
+
+#[test]
+fn test_find(){
+    let mut pset = PrimeSet::new();
+
+    // pset is empty, so it needs to generate the primes
+    assert_eq!(pset.find_vec(1000), None);
+
+    let (ix_exp, n_exp) = (168, 1009);
+
+    assert_eq!(pset.find(1000), (ix_exp, n_exp));
+    assert_eq!(pset.find(n_exp), (ix_exp, n_exp));
+
+    // We shouldn't have gone beyond 1009
+    {
+        let plst = pset.list();
+        let plen = plst.len();
+        assert_eq!(plen, ix_exp+1);
+
+        assert_eq!(plst[plen-1], n_exp);
+    }
+
+    assert_eq!(pset.find_vec(n_exp), Some((ix_exp, n_exp)));
 }
 
 #[test]
@@ -317,9 +394,18 @@ fn test_factors(){
                 (121, vec!(11, 11)),
                 ];
     
+    // Test unique factors
     for &(n, ref v) in ns.iter(){
         assert_eq!(pset.prime_factors(n), *v);
         assert_eq!(factors(n), *v);
+
+        let unique_factors = factors_uniq(n);
+
+        // Get unique factors from the lists we made above
+        let mut unique_factors_exp : Vec<u64> = v.iter().map(|&x| {x}).collect();
+        unique_factors_exp.dedup();
+
+        assert_eq!(unique_factors, unique_factors_exp);
     }
 	
 	pset = PrimeSet::new();
