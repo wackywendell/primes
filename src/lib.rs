@@ -23,13 +23,22 @@ extern crate test;
 use std::ops::Index;
 use std::slice;
 use std::iter;
-use std::num::Float;
+use std::num::{Float,cast};
+use std::cmp::Ordering::{Equal,Less,Greater};
 
 #[cfg(test)]
 use test::Bencher;
 
-fn sqrt_floor(n : uint) -> uint {
-    (n as f64).sqrt().floor() as uint
+fn sqrt_floor<T: std::num::NumCast>(n : T) -> T {
+    cast::<f64, T>(
+        (cast::<T, f64>(n).unwrap()).sqrt().floor()
+    ).unwrap()
+}
+
+fn sqrt_ceil<T: std::num::NumCast>(n : T) -> T {
+    cast::<f64, T>(
+        (cast::<T, f64>(n).unwrap()).sqrt().ceil()
+    ).unwrap()
 }
 
 /** A prime generator, using the Sieve of Eratosthenes.
@@ -37,14 +46,14 @@ fn sqrt_floor(n : uint) -> uint {
 Create with `let mut pset = PrimeSet::new()`, and then use `pset.iter()` to iterate over all primes.
 **/
 pub struct PrimeSet {
-    lst : Vec<uint>
+    lst : Vec<u64>
 }
 
 /// An iterator over generated primes. Created by PrimeSet::iter or
 /// PrimeSet::generator
 pub struct PrimeSetIter<'a> {
     p : &'a mut PrimeSet,
-    n : uint,
+    n : usize,
     expand : bool
 }
 
@@ -56,7 +65,7 @@ impl PrimeSet {
     
     /// Finds one more prime, and adds it to the list
     pub fn expand(&mut self) {
-        let mut l = self.lst[self.lst.len()-1] + 2;
+        let mut l : u64 = self.lst[self.lst.len()-1] + 2;
         let mut sql = sqrt_floor(l);
         let mut remainder = 0;
         loop {
@@ -78,12 +87,12 @@ impl PrimeSet {
     }
     
     /// Number of primes found so far
-    pub fn len(&self) -> uint {
+    pub fn len(&self) -> usize {
         self.lst.len()
     }
     
     /// Return all primes found so far as a slice
-    pub fn list<'a>(&'a self) -> &'a [uint] {
+    pub fn list<'a>(&'a self) -> &'a [u64] {
         self.lst.as_slice()
     }
     
@@ -104,14 +113,14 @@ impl PrimeSet {
     //~ }
     
     /// Iterator over just the primes found so far
-    pub fn iter_vec<'a>(&'a self) -> slice::Iter<'a, uint> {
+    pub fn iter_vec<'a>(&'a self) -> slice::Iter<'a, u64> {
         self.lst.iter()
     }
     
     /// Find the next largest prime from a number
     /// Returns (idx, prime)
     /// Note that if n is prime, then the output will be (idx, n)
-    pub fn find(&mut self, n: uint) -> (uint, uint) {
+    pub fn find(&mut self, n: u64) -> (usize, u64) {
         while n > *(self.lst.last().unwrap_or(&0)){
             self.expand();
         }
@@ -121,7 +130,7 @@ impl PrimeSet {
     /// Check if a number is prime
     /// Note that this only requires primes up to n.sqrt() to be generated, and will generate
     /// them as necessary on its own.
-    pub fn is_prime(&mut self, n: uint) -> bool {
+    pub fn is_prime(&mut self, n: u64) -> bool {
         if n <= 1 {return false;}
         if n == 2 {return true;} // otherwise we get 2 % 2 == 0!
         for m in self.iter() {
@@ -134,12 +143,13 @@ impl PrimeSet {
     /// Find the next largest prime from a number, if it is within the already-found list
     /// Returns (idx, prime)
     /// Note that if n is prime, then the output will be (idx, n)
-    pub fn find_vec(&self, n: uint) -> Option<(uint, uint)> {
+    pub fn find_vec(&self, n: u64) -> Option<(usize, u64)> {
         if n > *(self.lst.last().unwrap_or(&0)){ return None;}
         
-        let mut base : uint = 0;
-        let mut lim : uint = self.len();
+        let mut base : usize = 0;
+        let mut lim : usize = self.len();
 
+        // Binary search algorithm
         while lim != 0 {
             let ix = base + (lim >> 1);
             match self.lst[ix].cmp(&n) {
@@ -156,25 +166,25 @@ impl PrimeSet {
     }
     
     /// Get the nth prime, even if we haven't yet found it
-    pub fn get(&mut self, index : &uint) -> &uint {
-		for _ in range(0, (*index as int) + 1 - (self.lst.len() as int)){
+    pub fn get(&mut self, index : &usize) -> &u64 {
+		for _ in range(0, (*index as isize) + 1 - (self.lst.len() as isize)){
 			self.expand();
 		}
         self.lst.index(index)
 	}
 	
 	/// Get the prime factors of a number, starting from 2, including repeats
-	pub fn prime_factors(&mut self, n: uint) -> Vec<uint> {
+	pub fn prime_factors(&mut self, n: u64) -> Vec<u64> {
 		if n == 1 {return Vec::new();}
 		let mut curn = n;	
-		let mut m = ((curn as f64).sqrt()).ceil() as uint;
-		let mut lst: Vec<uint> = Vec::new();
+		let mut m = sqrt_ceil(curn);
+		let mut lst: Vec<u64> = Vec::new();
 		for p in self.iter() {
 			while curn % p == 0 {
 				lst.push(p);
 				curn /= p;
 				if curn == 1 {return lst;}
-				m = ((curn as f64).sqrt()).ceil() as uint;
+				m = sqrt_ceil(curn);
 			}
 			
 			if p > m {
@@ -186,14 +196,16 @@ impl PrimeSet {
 	}
 }
 
-impl Index<uint, uint> for PrimeSet {
-    fn index(&self, index: &uint) -> &uint {
+impl Index<usize> for PrimeSet {
+    type Output = u64;
+    fn index(&self, index: &usize) -> &u64 {
         self.lst.index(index)
     }
 }
 
-impl<'a> Iterator<uint> for PrimeSetIter<'a> {
-    fn next(&mut self) -> Option<uint> {
+impl<'a> Iterator for PrimeSetIter<'a> {
+    type Item = u64;
+    fn next(&mut self) -> Option<u64> {
         while self.n >= self.p.len(){
             match self.expand {
                 true => self.p.expand(),
@@ -209,8 +221,8 @@ impl<'a> Iterator<uint> for PrimeSetIter<'a> {
 }
 
 /// Find the first factor (other than 1) of a number
-fn firstfac(x: uint) -> uint {
-    let m = ((x as f64).sqrt()).ceil() as uint;
+fn firstfac(x: u64) -> u64 {
+    let m = sqrt_ceil(x);
     if x % 2 == 0 { return 2; };
     for n in iter::range_step(3, m + 1, 2) {
         if x % n == 0 { return n; };
@@ -220,9 +232,9 @@ fn firstfac(x: uint) -> uint {
 
 /// Find all prime factors of a number
 /// Does not use a PrimeSet, but simply counts upwards
-pub fn factors(x: uint) -> Vec<uint> {
+pub fn factors(x: u64) -> Vec<u64> {
     if x <= 1 {return vec!()};
-    let mut lst: Vec<uint> = Vec::new();
+    let mut lst: Vec<u64> = Vec::new();
     let mut curn = x;
     loop  {
         let m = firstfac(curn);
@@ -233,8 +245,8 @@ pub fn factors(x: uint) -> Vec<uint> {
 }
 
 /// Find all unique prime factors of a number
-pub fn factors_uniq(x: uint) -> Vec<uint> {
-    let mut lst: Vec<uint> = Vec::new();
+pub fn factors_uniq(x: u64) -> Vec<u64> {
+    let mut lst: Vec<u64> = Vec::new();
     let mut curn = x;
     loop  {
         let m = firstfac(curn);
@@ -247,7 +259,7 @@ pub fn factors_uniq(x: uint) -> Vec<uint> {
 }
 
 /// Test whether a number is prime. Checks every odd number up to sqrt(n).
-pub fn is_prime(n : uint) -> bool {
+pub fn is_prime(n : u64) -> bool {
     if n <= 1 {return false;}
     firstfac(n) == n
 }
@@ -255,7 +267,7 @@ pub fn is_prime(n : uint) -> bool {
 #[test]
 fn test_iter(){
     let mut pset = PrimeSet::new();
-    let first_few = [2u,3,5,7,11,13,17,19,23];
+    let first_few = [2u64,3,5,7,11,13,17,19,23];
     for (m, &n) in pset.iter().zip(first_few.iter()) {
         assert_eq!(m, n);
     }
