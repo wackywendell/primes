@@ -1,6 +1,6 @@
 /*!
 
-A basic library for finding primes, providing a basic Iterator over all primes. 
+A basic library for finding primes, providing a basic Iterator over all primes.
 It is not as fast as `slow_primes`, but it is meant to be easy to use!
 
 The simplest usage is simply to create an `Iterator`:
@@ -62,6 +62,8 @@ assert_eq!(pset.find(n), (ix, n));
 ```
 
 */
+#![feature(core)]
+#![feature(test)]
 
 #[warn(non_camel_case_types)]
 #[warn(non_snake_case)]
@@ -69,7 +71,6 @@ assert_eq!(pset.find(n), (ix, n));
 #[warn(non_upper_case_globals)]
 #[warn(missing_docs)]
 
-#[cfg(test)]
 extern crate test;
 
 use std::ops::Index;
@@ -145,7 +146,7 @@ impl PrimeSet {
     
     /// Return all primes found so far as a slice
     pub fn list<'a>(&'a self) -> &'a [u64] {
-        &self.lst[]
+        &self.lst[..]
     }
     
     /// Iterator over all primes not yet found
@@ -154,7 +155,7 @@ impl PrimeSet {
         PrimeSetIter{p:self, n:myn, expand:true}
     }
     
-    /// Iterator over all primes, starting with 2. If you don't care about the "state" of the 
+    /// Iterator over all primes, starting with 2. If you don't care about the "state" of the
     /// PrimeSet, this is what you want!
     pub fn iter<'a>(&'a mut self) -> PrimeSetIter<'a> {
         PrimeSetIter{p:self, n:0, expand:true}
@@ -228,7 +229,7 @@ impl PrimeSet {
 	/// Get the prime factors of a number, starting from 2, including repeats
 	pub fn prime_factors(&mut self, n: u64) -> Vec<u64> {
 		if n == 1 {return Vec::new();}
-		let mut curn = n;	
+		let mut curn = n;
 		let mut m = sqrt_ceil(curn);
 		let mut lst: Vec<u64> = Vec::new();
 		for p in self.iter() {
