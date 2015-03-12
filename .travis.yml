@@ -1,6 +1,6 @@
 env:
   global:
-    - secure: DVHjbwzzJHXWdvKudu0v4isBmfKcRxKmjbz8hS+ZQ2yTXVt5HYq+mTW7kGfSVRWdXs5DDI1QkykQOeLAX/w5zKZXbdLiNrpXMzvvPUYmt4fBJv73lT5XG4POi3TZIZuTe+tgACCI9Tc111tXBWp51snINO9zcFZ91Ob1+zzua54=
+    - secure: PUjDU++nskQf0ZqR4LiqsiPPmi03zSTY85/lzTe30j5P3QvA9vG/mFw3EzeEeo20Y0gXqNRwZwuSgVNFkwU+Mps7nIU6QRwqa/yCxM6z8wCpzUbZv58k3PGpkzetuCIBL0R18a+Q/E2GXvx6gJtC1G+0FJijy3XcaAQonC5ikTQ=
 
 install:
 - curl https://static.rust-lang.org/rustup.sh | sudo sh -
