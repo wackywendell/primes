@@ -60,8 +60,7 @@ This also provides a few functions unconnected to `PrimeSet`, which will be fast
 case, but slower in the long term as they do not use any caching of primes.
 
 */
-#![feature(core)]
-#![feature(test)]
+#![feature(core,step_by,test)]
 
 #[warn(non_camel_case_types)]
 #[warn(non_snake_case)]
@@ -73,7 +72,6 @@ extern crate test;
 
 use std::ops::Index;
 use std::slice;
-use std::iter;
 use std::num::{Float,cast};
 use std::cmp::Ordering::{Equal,Less,Greater};
 
@@ -217,11 +215,11 @@ impl PrimeSet {
     }
 
     /// Get the nth prime, even if we haven't yet found it
-    pub fn get(&mut self, index : &usize) -> &u64 {
-		for _ in (0..(*index as isize) + 1 - (self.lst.len() as isize)){
+    pub fn get(&mut self, index : usize) -> u64 {
+		for _ in (0..(index as isize) + 1 - (self.lst.len() as isize)){
 			self.expand();
 		}
-        self.lst.index(index)
+        self.lst[index]
 	}
 
 	/// Get the prime factors of a number, starting from 2, including repeats
@@ -249,8 +247,8 @@ impl PrimeSet {
 
 impl Index<usize> for PrimeSet {
     type Output = u64;
-    fn index(&self, index: &usize) -> &u64 {
-        self.lst.index(index)
+    fn index(&self, index: usize) -> &u64 {
+        &self.lst[index]
     }
 }
 
@@ -275,7 +273,7 @@ impl<'a> Iterator for PrimeSetIter<'a> {
 fn firstfac(x: u64) -> u64 {
     let m = sqrt_ceil(x);
     if x % 2 == 0 { return 2; };
-    for n in iter::range_step(3, m + 1, 2) {
+    for n in (3..m + 1).step_by(2) {
         if x % n == 0 { return n; };
     }
     return x;
