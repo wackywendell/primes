@@ -61,6 +61,7 @@ case, but slower in the long term as they do not use any caching of primes.
 
 */
 #![feature(core,step_by,test)]
+#![doc(html_root_url = "https://wackywendell.github.io/primes/")]
 
 #[warn(non_camel_case_types)]
 #[warn(non_snake_case)]
