@@ -1,19 +1,21 @@
+language: rust
 env:
   global:
-  - secure: PUjDU++nskQf0ZqR4LiqsiPPmi03zSTY85/lzTe30j5P3QvA9vG/mFw3EzeEeo20Y0gXqNRwZwuSgVNFkwU+Mps7nIU6QRwqa/yCxM6z8wCpzUbZv58k3PGpkzetuCIBL0R18a+Q/E2GXvx6gJtC1G+0FJijy3XcaAQonC5ikTQ=
-  - secure: jHaQxUCPsFgcVfGn1Gw+GX+3GrmJjXOpEfHfoaeHz03r58IIzYD1mFL1/QjCPR8nn2X1GCuUzFaJtYB/1xmgYC6HZP7kFBGkygBEt0Jiem/lru328WNRD3/j9wQi1OL6+cTcNcz0+4oTiwvctqA8p3OcuKCr+VDiQnspq+orLHM=
-install:
-- curl https://static.rust-lang.org/rustup.sh | sudo sh -
+    - secure: jHaQxUCPsFgcVfGn1Gw+GX+3GrmJjXOpEfHfoaeHz03r58IIzYD1mFL1/QjCPR8nn2X1GCuUzFaJtYB/1xmgYC6HZP7kFBGkygBEt0Jiem/lru328WNRD3/j9wQi1OL6+cTcNcz0+4oTiwvctqA8p3OcuKCr+VDiQnspq+orLHM=
+    # GH_TOKEN
 script:
-- cargo build --verbose && cargo test --verbose && cargo doc --verbose && mv target/doc
-  doc
-after_script:
-- curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
-after_success:
-- [ $TRAVIS_BRANCH = master ] || exit
-- [ $TRAVIS_PULL_REQUEST = false ] || exit
-- cargo doc
-- echo '<meta http-equiv=refresh content=0;url=primes/index.html>' > doc/index.html
-- sudo pip install ghp-import
-- ghp-import -n doc
-- git push -fq https://${GH_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
+  - cargo build --verbose
+  - cargo test --verbose
+  - cargo doc --verbose
+  - mv target/doc doc
+
+#[ $TRAVIS_BRANCH = master ] && 
+after_success: |
+  [ $TRAVIS_PULL_REQUEST = false ] &&
+  echo '<meta http-equiv=refresh content=0;url=primes/index.html>' > doc/index.html &&
+  pip install ghp-import --user $USER &&
+  $HOME/.local/bin/ghp-import -n doc &&
+  git push -qf https://${GH_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
+notifications:
+  email:
+    on_success: never
