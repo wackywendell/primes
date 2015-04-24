@@ -60,7 +60,7 @@ This also provides a few functions unconnected to `PrimeSet`, which will be fast
 case, but slower in the long term as they do not use any caching of primes.
 
 */
-#![feature(core,step_by,test)]
+#![feature(step_by,test)]
 #![doc(html_root_url = "https://wackywendell.github.io/primes/")]
 
 #[warn(non_camel_case_types)]
@@ -70,25 +70,28 @@ case, but slower in the long term as they do not use any caching of primes.
 #[warn(missing_docs)]
 
 extern crate test;
+extern crate num;
 
 use std::ops::Index;
 use std::slice;
-use std::num::{Float,cast};
 use std::cmp::Ordering::{Equal,Less,Greater};
+use num::{Float,NumCast};
 
 #[cfg(test)]
 use test::Bencher;
 
-fn sqrt_floor<T: std::num::NumCast>(n : T) -> T {
-    cast::<f64, T>(
-        (cast::<T, f64>(n).unwrap()).sqrt().floor()
-    ).unwrap()
+/// Equivalent to floor(sqrt(n)), but takes an integer and returns an integer
+fn sqrt_floor<T: NumCast>(n : T) -> T {
+    let n64 : f64 = NumCast::from(n).unwrap();
+    let rt = n64.sqrt().floor();
+    NumCast::from(rt).unwrap()
 }
 
-fn sqrt_ceil<T: std::num::NumCast>(n : T) -> T {
-    cast::<f64, T>(
-        (cast::<T, f64>(n).unwrap()).sqrt().ceil()
-    ).unwrap()
+/// Equivalent to floor(sqrt(n)), but takes an integer and returns an integer
+fn sqrt_ceil<T: NumCast>(n : T) -> T {
+    let n64 : f64 = NumCast::from(n).unwrap();
+    let rt = n64.sqrt().ceil();
+    NumCast::from(rt).unwrap()
 }
 
 /** A prime generator, using the Sieve of Eratosthenes.
@@ -116,12 +119,11 @@ impl PrimeSet {
     /// Finds one more prime, and adds it to the list
     pub fn expand(&mut self) {
         let mut l : u64 = self.lst[self.lst.len()-1] + 2;
-        let mut sql = sqrt_floor(l);
         let mut remainder = 0;
         loop {
             for &n in self.lst.iter() {
                 remainder = l % n;
-                if remainder == 0 || n > sql {
+                if remainder == 0 || n*n > l {
                     break;
                 }
             };
@@ -132,7 +134,6 @@ impl PrimeSet {
             };
 
             l += 2;
-            sql = sqrt_floor(l);
         }
     }
 
@@ -227,22 +228,22 @@ impl PrimeSet {
 	pub fn prime_factors(&mut self, n: u64) -> Vec<u64> {
 		if n == 1 {return Vec::new();}
 		let mut curn = n;
-		let mut m = sqrt_ceil(curn);
 		let mut lst: Vec<u64> = Vec::new();
 		for p in self.iter() {
 			while curn % p == 0 {
+                println!("Pushing {} ({} / {})", p, curn, n);
 				lst.push(p);
 				curn /= p;
 				if curn == 1 {return lst;}
-				m = sqrt_ceil(curn);
 			}
 
-			if p > m {
-				lst.push(p);
+			if p*p > curn {
+                println!("Final push {} ({} / {})", p, curn, n);
+				lst.push(curn);
 				return lst;
 			}
 		}
-		panic!("This should be unreachable.");
+		unreachable!("This should be unreachable.");
 	}
 }
 
@@ -272,9 +273,8 @@ impl<'a> Iterator for PrimeSetIter<'a> {
 
 /// Find the first factor (other than 1) of a number
 fn firstfac(x: u64) -> u64 {
-    let m = sqrt_ceil(x);
     if x % 2 == 0 { return 2; };
-    for n in (3..m + 1).step_by(2) {
+    for n in (3..).step_by(2).take_while(|m| m*m <= x) {
         if x % n == 0 { return n; };
     }
     return x;
@@ -313,6 +313,30 @@ pub fn factors_uniq(x: u64) -> Vec<u64> {
 pub fn is_prime(n : u64) -> bool {
     if n <= 1 {return false;}
     firstfac(n) == n
+}
+
+#[test]
+fn test_sqrts(){
+    assert_eq!(sqrt_ceil(0), 0);
+    assert_eq!(sqrt_floor(0), 0);
+    
+    assert_eq!(sqrt_ceil(1), 1);
+    assert_eq!(sqrt_floor(1), 1);
+    
+    let rts = [2u64,3,5,7,11,13,17,19,23, 8734, 809832, 7433154, 1 << 26 - 1];
+    for &rt in rts.iter() {
+        let sq = rt * rt;
+        println!("rt: {}, n: {}", rt, sq);
+        
+        assert_eq!(sqrt_ceil(sq), rt);
+        assert_eq!(sqrt_floor(sq), rt);
+        
+        assert_eq!(sqrt_ceil(sq-1), rt);
+        assert_eq!(sqrt_floor(sq-1), rt-1);
+        
+        assert_eq!(sqrt_ceil(sq+1), rt+1);
+        assert_eq!(sqrt_floor(sq+1), rt);
+    }
 }
 
 #[test]
@@ -394,6 +418,7 @@ fn test_factors(){
 
     // Test unique factors
     for &(n, ref v) in ns.iter(){
+        println!("{}: {:?}", n, v);
         assert_eq!(pset.prime_factors(n), *v);
         assert_eq!(factors(n), *v);
 
