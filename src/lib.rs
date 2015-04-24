@@ -70,29 +70,13 @@ case, but slower in the long term as they do not use any caching of primes.
 #[warn(missing_docs)]
 
 extern crate test;
-extern crate num;
 
 use std::ops::Index;
 use std::slice;
 use std::cmp::Ordering::{Equal,Less,Greater};
-use num::{Float,NumCast};
 
 #[cfg(test)]
 use test::Bencher;
-
-/// Equivalent to floor(sqrt(n)), but takes an integer and returns an integer
-fn sqrt_floor<T: NumCast>(n : T) -> T {
-    let n64 : f64 = NumCast::from(n).unwrap();
-    let rt = n64.sqrt().floor();
-    NumCast::from(rt).unwrap()
-}
-
-/// Equivalent to floor(sqrt(n)), but takes an integer and returns an integer
-fn sqrt_ceil<T: NumCast>(n : T) -> T {
-    let n64 : f64 = NumCast::from(n).unwrap();
-    let rt = n64.sqrt().ceil();
-    NumCast::from(rt).unwrap()
-}
 
 /** A prime generator, using the Sieve of Eratosthenes.
 
@@ -188,7 +172,7 @@ impl PrimeSet {
             if n % m == 0 {return false;};
             if m*m > n {return true;};
         }
-        panic!("This iterator should not be empty.");
+        unreachable!("This iterator should not be empty.");
     }
 
     /// Find the next largest prime from a number, if it is within the already-found list
@@ -316,30 +300,6 @@ pub fn is_prime(n : u64) -> bool {
 }
 
 #[test]
-fn test_sqrts(){
-    assert_eq!(sqrt_ceil(0), 0);
-    assert_eq!(sqrt_floor(0), 0);
-    
-    assert_eq!(sqrt_ceil(1), 1);
-    assert_eq!(sqrt_floor(1), 1);
-    
-    let rts = [2u64,3,5,7,11,13,17,19,23, 8734, 809832, 7433154, 1 << 26 - 1];
-    for &rt in rts.iter() {
-        let sq = rt * rt;
-        println!("rt: {}, n: {}", rt, sq);
-        
-        assert_eq!(sqrt_ceil(sq), rt);
-        assert_eq!(sqrt_floor(sq), rt);
-        
-        assert_eq!(sqrt_ceil(sq-1), rt);
-        assert_eq!(sqrt_floor(sq-1), rt-1);
-        
-        assert_eq!(sqrt_ceil(sq+1), rt+1);
-        assert_eq!(sqrt_floor(sq+1), rt);
-    }
-}
-
-#[test]
 fn test_iter(){
     let mut pset = PrimeSet::new();
     let first_few = [2u64,3,5,7,11,13,17,19,23];
@@ -395,6 +355,28 @@ fn test_primes(){
     assert!(!is_prime(9));
     assert!(pset.is_prime(5));
     assert!(is_prime(5));
+    
+    assert!(pset.is_prime(954377));
+    assert!(pset.is_prime(954379));
+    assert!(!pset.is_prime(954377*954379));
+    
+    assert!(!is_prime(18409199*18409201));
+    assert!(pset.is_prime(18409199));
+    assert!(pset.is_prime(18409201));
+    
+    assert!(!pset.is_prime(2147483643));
+    assert!(pset.is_prime(2147483647));
+    assert!(!pset.is_prime(2147483649));
+    assert!(!pset.is_prime(63061493));
+    assert!(!pset.is_prime(63061491));
+    assert!(pset.is_prime(63061489));
+    assert!(!pset.is_prime(63061487));
+    assert!(!pset.is_prime(63061485));
+    assert!(pset.is_prime(2147483647));
+    assert!(pset.is_prime(63061489));
+    assert!(!is_prime(63061489 * 2147483647));
+    assert!(!is_prime(63061489 * 63061489));
+    // assert!(!is_prime(2147483647 * 2147483647)); // Runs very long
 }
 
 #[test]
