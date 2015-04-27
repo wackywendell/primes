@@ -1,4 +1,7 @@
 language: rust
+rust:
+  - nightly
+  - beta
 env:
   global:
     - secure: jHaQxUCPsFgcVfGn1Gw+GX+3GrmJjXOpEfHfoaeHz03r58IIzYD1mFL1/QjCPR8nn2X1GCuUzFaJtYB/1xmgYC6HZP7kFBGkygBEt0Jiem/lru328WNRD3/j9wQi1OL6+cTcNcz0+4oTiwvctqA8p3OcuKCr+VDiQnspq+orLHM=
@@ -7,9 +10,11 @@ script:
   - cargo build --verbose
   - cargo test --verbose
   - cargo doc --verbose
+  - '[ "$TRAVIS_RUST_VERSION" = "beta" ] || cargo bench --verbose # adapted from rust-itertools'
   - mv target/doc doc
 
 after_success: |
+  [ "$TRAVIS_RUST_VERSION" = "beta" ] && 
   [ $TRAVIS_BRANCH = master ] && 
   [ $TRAVIS_PULL_REQUEST = false ] &&
   echo '<meta http-equiv=refresh content=0;url=primes/index.html>' > doc/index.html &&
