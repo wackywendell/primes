@@ -60,7 +60,6 @@ This also provides a few functions unconnected to `PrimeSet`, which will be fast
 case, but slower in the long term as they do not use any caching of primes.
 
 */
-#![feature(step_by)]
 #![doc(html_root_url = "https://wackywendell.github.io/primes/")]
 
 #[warn(non_camel_case_types)]
@@ -253,7 +252,9 @@ impl<'a> Iterator for PrimeSetIter<'a> {
 /// Find the first factor (other than 1) of a number
 fn firstfac(x: u64) -> u64 {
     if x % 2 == 0 { return 2; };
-    for n in (3..).step_by(2).take_while(|m| m*m <= x) {
+    // TODO: return to step_by
+    // for n in (3..).step_by(2).take_while(|m| m*m <= x) {
+    for n in (1..).map(|m| 2*m+1).take_while(|m| m*m <= x) {
         if x % n == 0 { return n; };
     }
     return x;
