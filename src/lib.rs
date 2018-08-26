@@ -63,11 +63,6 @@ case, but slower in the long term as they do not use any caching of primes.
 #![doc(html_root_url = "https://wackywendell.github.io/primes/")]
 
 use std::cmp::Ordering::{Equal, Greater, Less};
-#[warn(non_camel_case_types)]
-#[warn(non_snake_case)]
-#[warn(unused_qualifications)]
-#[warn(non_upper_case_globals)]
-#[warn(missing_docs)]
 use std::ops::Index;
 use std::slice;
 
@@ -75,6 +70,7 @@ use std::slice;
 
 Create with `let mut pset = PrimeSet::new()`, and then use `pset.iter()` to iterate over all primes.
 **/
+#[derive(Default)]
 pub struct PrimeSet {
     lst: Vec<u64>,
 }
@@ -98,7 +94,7 @@ impl PrimeSet {
         let mut l: u64 = self.lst[self.lst.len() - 1] + 2;
         let mut remainder = 0;
         loop {
-            for &n in self.lst.iter() {
+            for &n in &self.lst {
                 remainder = l % n;
                 if remainder == 0 || n * n > l {
                     break;
@@ -119,13 +115,17 @@ impl PrimeSet {
         self.lst.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        false
+    }
+
     /// Return all primes found so far as a slice
-    pub fn list<'a>(&'a self) -> &'a [u64] {
+    pub fn list(&self) -> &[u64] {
         &self.lst[..]
     }
 
     /// Iterator over all primes not yet found
-    pub fn generator<'a>(&'a mut self) -> PrimeSetIter<'a> {
+    pub fn generator(&mut self) -> PrimeSetIter {
         let myn = self.len();
         PrimeSetIter {
             p: self,
@@ -136,7 +136,7 @@ impl PrimeSet {
 
     /// Iterator over all primes, starting with 2. If you don't care about the "state" of the
     /// PrimeSet, this is what you want!
-    pub fn iter<'a>(&'a mut self) -> PrimeSetIter<'a> {
+    pub fn iter(&mut self) -> PrimeSetIter {
         PrimeSetIter {
             p: self,
             n: 0,
@@ -149,7 +149,7 @@ impl PrimeSet {
     //~ }
 
     /// Iterator over just the primes found so far
-    pub fn iter_vec<'a>(&'a self) -> slice::Iter<'a, u64> {
+    pub fn iter_vec(&self) -> slice::Iter<u64> {
         self.lst.iter()
     }
 
@@ -166,6 +166,7 @@ impl PrimeSet {
     /// Check if a number is prime
     /// Note that this only requires primes up to n.sqrt() to be generated, and will generate
     /// them as necessary on its own.
+    #[cfg_attr(feature = "cargo-clippy", allow(wrong_self_convention))]
     pub fn is_prime(&mut self, n: u64) -> bool {
         if n <= 1 {
             return false;
@@ -208,7 +209,7 @@ impl PrimeSet {
             }
             lim >>= 1;
         }
-        return Some((base, self.lst[base]));
+        Some((base, self.lst[base]))
     }
 
     /// Get the nth prime, even if we haven't yet found it
@@ -257,9 +258,10 @@ impl<'a> Iterator for PrimeSetIter<'a> {
     type Item = u64;
     fn next(&mut self) -> Option<u64> {
         while self.n >= self.p.len() {
-            match self.expand {
-                true => self.p.expand(),
-                false => return None,
+            if self.expand {
+                self.p.expand()
+            } else {
+                return None;
             }
         }
         self.n += 1;
@@ -282,7 +284,8 @@ fn firstfac(x: u64) -> u64 {
             return n;
         };
     }
-    return x;
+    // No factor found. It must be prime.
+    x
 }
 
 /// Find all prime factors of a number
@@ -302,7 +305,7 @@ pub fn factors(x: u64) -> Vec<u64> {
             curn /= m
         };
     }
-    return lst;
+    lst
 }
 
 /// Find all unique prime factors of a number
@@ -325,7 +328,7 @@ pub fn factors_uniq(x: u64) -> Vec<u64> {
             break;
         }
     }
-    return lst;
+    lst
 }
 
 /// Test whether a number is prime. Checks every odd number up to sqrt(n).
