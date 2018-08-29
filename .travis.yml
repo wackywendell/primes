@@ -4,8 +4,8 @@ rust:
   - beta
 env:
   global:
-    - secure: jHaQxUCPsFgcVfGn1Gw+GX+3GrmJjXOpEfHfoaeHz03r58IIzYD1mFL1/QjCPR8nn2X1GCuUzFaJtYB/1xmgYC6HZP7kFBGkygBEt0Jiem/lru328WNRD3/j9wQi1OL6+cTcNcz0+4oTiwvctqA8p3OcuKCr+VDiQnspq+orLHM=
     # GH_TOKEN
+  - secure: Pl+DwgrvHWXBK6LP87vPSqQST9rv1a+7as9dnnI099leV2eD3ZYJKL1aOJNLLhlmxcZ6gElm81nP+yXmFTbPXmYIQ7+Dtok1fz4lxcd04bUfb1fiQtJy+t+Z7kTxKa/mOKOT6a4VXoKsTKMps8H0mPAbmSDlEmLACv4V5x9t6As=
 script:
   - cargo build --verbose
   - cargo test --verbose
