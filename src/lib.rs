@@ -75,8 +75,8 @@ pub struct PrimeSet {
     lst: Vec<u64>,
 }
 
-/// An iterator over generated primes. Created by PrimeSet::iter or
-/// PrimeSet::generator
+/// An iterator over generated primes. Created by `PrimeSet::iter` or
+/// `PrimeSet::generator`
 pub struct PrimeSetIter<'a> {
     p: &'a mut PrimeSet,
     n: usize,
@@ -135,7 +135,7 @@ impl PrimeSet {
     }
 
     /// Iterator over all primes, starting with 2. If you don't care about the "state" of the
-    /// PrimeSet, this is what you want!
+    /// `PrimeSet`, this is what you want!
     pub fn iter(&mut self) -> PrimeSetIter {
         PrimeSetIter {
             p: self,
@@ -144,18 +144,16 @@ impl PrimeSet {
         }
     }
 
-    //~ pub fn iter_once(&'self mut self) -> PrimeSetIter<'self> {
-    //~ PrimeSetIter{p:self, n:0, expand:false}
-    //~ }
-
     /// Iterator over just the primes found so far
     pub fn iter_vec(&self) -> slice::Iter<u64> {
         self.lst.iter()
     }
 
     /// Find the next largest prime from a number
-    /// Returns (idx, prime)
-    /// Note that if n is prime, then the output will be (idx, n)
+    ///
+    /// Returns `(idx, prime)`
+    ///
+    /// Note that if `n` is prime, then the output will be `(idx, n)`
     pub fn find(&mut self, n: u64) -> (usize, u64) {
         while n > *(self.lst.last().unwrap_or(&0)) {
             self.expand();
@@ -164,7 +162,8 @@ impl PrimeSet {
     }
 
     /// Check if a number is prime
-    /// Note that this only requires primes up to n.sqrt() to be generated, and will generate
+    ///
+    /// Note that this only requires primes up to `n.sqrt()` to be generated, and will generate
     /// them as necessary on its own.
     #[cfg_attr(feature = "cargo-clippy", allow(wrong_self_convention))]
     pub fn is_prime(&mut self, n: u64) -> bool {
@@ -186,8 +185,10 @@ impl PrimeSet {
     }
 
     /// Find the next largest prime from a number, if it is within the already-found list
-    /// Returns (idx, prime)
-    /// Note that if n is prime, then the output will be (idx, n)
+    ///
+    /// Returns `(idx, prime)`
+    ///
+    /// Note that if `n` is prime, then the output will be `(idx, n)`
     pub fn find_vec(&self, n: u64) -> Option<(usize, u64)> {
         if n > *(self.lst.last().unwrap_or(&0)) {
             return None;
@@ -289,7 +290,7 @@ fn firstfac(x: u64) -> u64 {
 }
 
 /// Find all prime factors of a number
-/// Does not use a PrimeSet, but simply counts upwards
+/// Does not use a `PrimeSet`, but simply counts upwards
 pub fn factors(x: u64) -> Vec<u64> {
     if x <= 1 {
         return vec![];
@@ -331,7 +332,7 @@ pub fn factors_uniq(x: u64) -> Vec<u64> {
     lst
 }
 
-/// Test whether a number is prime. Checks every odd number up to sqrt(n).
+/// Test whether a number is prime. Checks every odd number up to `sqrt(n)`.
 pub fn is_prime(n: u64) -> bool {
     if n <= 1 {
         return false;
