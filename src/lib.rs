@@ -21,7 +21,7 @@ for the given test, and primes are cached for later use.
 
 [*Source*](https://github.com/wackywendell/primes)
 
-# Example: Find the millionth prime
+# Example: Find the first prime after 1 million
 
 ```
 use primes::PrimeSet;
