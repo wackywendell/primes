@@ -1,9 +1,7 @@
 primes
 ======
 
-[![Build Status](https://travis-ci.org/wackywendell/primes.svg)](https://travis-ci.org/wackywendell/primes)
-
-[Full Documentation](http://wackywendell.github.io/primes)
+[![Build Status](https://travis-ci.org/wackywendell/primes.svg)](https://travis-ci.org/wackywendell/primes) [![Build Status](https://docs.rs/primes/badge.svg)](https://docs.rs/primes)
 
 A prime generator for Rust.
 
