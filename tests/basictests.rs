@@ -1,18 +1,16 @@
-extern crate primes;
-
-use primes::{PrimeSet,is_prime,factors,factors_uniq};
+use primes::{factors, factors_uniq, is_prime, PrimeSet};
 
 #[test]
-fn test_iter(){
+fn test_iter() {
     let mut pset = PrimeSet::new();
-    let first_few = [2u64,3,5,7,11,13,17,19,23];
+    let first_few = [2u64, 3, 5, 7, 11, 13, 17, 19, 23];
     for (m, &n) in pset.iter().zip(first_few.iter()) {
         assert_eq!(m, n);
     }
 }
 
 #[test]
-fn test_find(){
+fn test_find() {
     let mut pset = PrimeSet::new();
 
     // pset is empty, so it needs to generate the primes
@@ -27,16 +25,16 @@ fn test_find(){
     {
         let plst = pset.list();
         let plen = plst.len();
-        assert_eq!(plen, ix_exp+1);
+        assert_eq!(plen, ix_exp + 1);
 
-        assert_eq!(plst[plen-1], n_exp);
+        assert_eq!(plst[plen - 1], n_exp);
     }
 
     assert_eq!(pset.find_vec(n_exp), Some((ix_exp, n_exp)));
 }
 
 #[test]
-fn test_primes(){
+fn test_primes() {
     let mut pset = PrimeSet::new();
 
     // note: some are repeated, because the pset list grows as it goes
@@ -49,8 +47,8 @@ fn test_primes(){
     assert!(is_prime(13));
     assert!(!pset.is_prime(45));
     assert!(!is_prime(45));
-    assert!(!pset.is_prime(13*13));
-    assert!(!is_prime(13*13));
+    assert!(!pset.is_prime(13 * 13));
+    assert!(!is_prime(13 * 13));
     assert!(pset.is_prime(13));
     assert!(pset.is_prime(7));
     assert!(is_prime(7));
@@ -58,15 +56,13 @@ fn test_primes(){
     assert!(!is_prime(9));
     assert!(pset.is_prime(5));
     assert!(is_prime(5));
-    
     assert!(pset.is_prime(954377));
     assert!(pset.is_prime(954379));
-    assert!(!pset.is_prime(954377*954379));
-    
-    assert!(!is_prime(18409199*18409201));
+    assert!(!pset.is_prime(954377 * 954379));
+
+    assert!(!is_prime(18409199 * 18409201));
     assert!(pset.is_prime(18409199));
     assert!(pset.is_prime(18409201));
-    
     assert!(!pset.is_prime(2147483643));
     assert!(pset.is_prime(2147483647));
     assert!(!pset.is_prime(2147483649));
@@ -83,26 +79,27 @@ fn test_primes(){
 }
 
 #[test]
-fn test_factors(){
-	let mut pset = PrimeSet::new();
+fn test_factors() {
+    let mut pset = PrimeSet::new();
 
-	let ns = [  (1, vec!()),
-                (2, vec!(2)),
-                (3, vec!(3)),
-                (4, vec!(2,2)),
-                (5, vec!(5)),
-                (6, vec!(2,3)),
-	            (9, vec!(3,3)),
-	            (12, vec!(2,2,3)),
-	            (121, vec!(11,11)),
-	            (144, vec!(2,2,2,2,3,3)),
-	            (10_000_000, vec!(2,2,2,2,2,2,2,5,5,5,5,5,5,5)),
-                (100, vec!(2,2,5,5)),
-                (121, vec!(11, 11)),
-                ];
+    let ns = [
+        (1, vec![]),
+        (2, vec![2]),
+        (3, vec![3]),
+        (4, vec![2, 2]),
+        (5, vec![5]),
+        (6, vec![2, 3]),
+        (9, vec![3, 3]),
+        (12, vec![2, 2, 3]),
+        (121, vec![11, 11]),
+        (144, vec![2, 2, 2, 2, 3, 3]),
+        (10_000_000, vec![2, 2, 2, 2, 2, 2, 2, 5, 5, 5, 5, 5, 5, 5]),
+        (100, vec![2, 2, 5, 5]),
+        (121, vec![11, 11]),
+    ];
 
     // Test unique factors
-    for &(n, ref v) in ns.iter(){
+    for &(n, ref v) in ns.iter() {
         println!("{}: {:?}", n, v);
         assert_eq!(pset.prime_factors(n), *v);
         assert_eq!(factors(n), *v);
@@ -110,13 +107,12 @@ fn test_factors(){
         let unique_factors = factors_uniq(n);
 
         // Get unique factors from the lists we made above
-        let mut unique_factors_exp : Vec<u64> = v.iter().map(|&x| {x}).collect();
+        let mut unique_factors_exp: Vec<u64> = v.iter().map(|&x| x).collect();
         unique_factors_exp.dedup();
 
         assert_eq!(unique_factors, unique_factors_exp);
     }
 
-	pset = PrimeSet::new();
-	assert_eq!(pset.prime_factors(12), vec!(2,2,3));
-
+    pset = PrimeSet::new();
+    assert_eq!(pset.prime_factors(12), vec!(2, 2, 3));
 }

@@ -1,9 +1,8 @@
 #![feature(test)]
 
-extern crate primes;
 extern crate test;
-use primes::PrimeSet;
 
+use primes::PrimeSet;
 use test::Bencher;
 
 #[bench]

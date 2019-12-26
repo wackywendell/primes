@@ -165,7 +165,7 @@ impl PrimeSet {
     ///
     /// Note that this only requires primes up to `n.sqrt()` to be generated, and will generate
     /// them as necessary on its own.
-    #[cfg_attr(feature = "cargo-clippy", allow(wrong_self_convention))]
+    #[cfg_attr(feature = "cargo-clippy", allow(clippy::wrong_self_convention))]
     pub fn is_prime(&mut self, n: u64) -> bool {
         if n <= 1 {
             return false;
