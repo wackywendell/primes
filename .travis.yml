@@ -2,15 +2,16 @@ language: rust
 rust:
   - nightly
   - beta
+  - stable
 env:
   global:
     # GH_TOKEN
-  - secure: Pl+DwgrvHWXBK6LP87vPSqQST9rv1a+7as9dnnI099leV2eD3ZYJKL1aOJNLLhlmxcZ6gElm81nP+yXmFTbPXmYIQ7+Dtok1fz4lxcd04bUfb1fiQtJy+t+Z7kTxKa/mOKOT6a4VXoKsTKMps8H0mPAbmSDlEmLACv4V5x9t6As=
+    - secure: Pl+DwgrvHWXBK6LP87vPSqQST9rv1a+7as9dnnI099leV2eD3ZYJKL1aOJNLLhlmxcZ6gElm81nP+yXmFTbPXmYIQ7+Dtok1fz4lxcd04bUfb1fiQtJy+t+Z7kTxKa/mOKOT6a4VXoKsTKMps8H0mPAbmSDlEmLACv4V5x9t6As=
 script:
   - cargo build --verbose
   - cargo test --verbose
   - cargo doc --verbose
-  - '[ "$TRAVIS_RUST_VERSION" = "beta" ] || cargo bench --verbose # adapted from rust-itertools'
+  - '[ "$TRAVIS_RUST_VERSION" = "nightly" ] && cargo bench --verbose # adapted from rust-itertools'
   - mv target/doc doc
 
 after_success: |
