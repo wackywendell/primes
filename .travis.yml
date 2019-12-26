@@ -11,7 +11,7 @@ script:
   - cargo build --verbose
   - cargo test --verbose
   - cargo doc --verbose
-  - '[ "$TRAVIS_RUST_VERSION" = "nightly" ] && cargo bench --verbose # adapted from rust-itertools'
+  - '[ "$TRAVIS_RUST_VERSION" != "nightly" ] || cargo bench --verbose # adapted from rust-itertools'
   - mv target/doc doc
 
 after_success: |
