@@ -230,7 +230,6 @@ impl PrimeSet {
         let mut lst: Vec<u64> = Vec::new();
         for p in self.iter() {
             while curn % p == 0 {
-                println!("Pushing {} ({} / {})", p, curn, n);
                 lst.push(p);
                 curn /= p;
                 if curn == 1 {
@@ -239,7 +238,6 @@ impl PrimeSet {
             }
 
             if p * p > curn {
-                println!("Final push {} ({} / {})", p, curn, n);
                 lst.push(curn);
                 return lst;
             }
