@@ -1,16 +1,24 @@
-#![feature(test)]
-
-extern crate test;
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 
 use primes::PrimeSet;
-use test::Bencher;
 
-#[bench]
-fn bench_primes(b: &mut Bencher) {
-	b.iter(|| {
-		let mut pset = PrimeSet::new();
-		let (_, _) = pset.find(1_000_000);
-		//~ let (idx, n) = pset.find(1_000_000);
-		//~ println!("Prime {}: {}", idx, n);
-	})
+fn bench_primes(c: &mut Criterion) {
+    let mut group = c.benchmark_group("PrimeSet::find");
+    for size in [
+        100, 200, 500, 1_000, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_000, 500_000,
+    ]
+    .iter()
+    {
+        group.throughput(Throughput::Elements(*size as u64));
+        group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
+            b.iter(|| {
+                let mut pset = PrimeSet::new();
+                black_box(pset.find(size))
+            })
+        });
+    }
+    group.finish();
 }
+
+criterion_group!(benches, bench_primes);
+criterion_main!(benches);

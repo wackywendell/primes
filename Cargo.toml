@@ -13,8 +13,21 @@ A package for calculating primes using the Sieve of Eratosthenes, and using that
 number is prime and calculating factors. Includes an iterator over all primes.
 """
 
-readme="README.md"
+readme = "README.md"
 
 documentation = "https://wackywendell.github.io/primes/"
 homepage = "https://github.com/wackywendell/primes/tree/master"
 repository = "https://github.com/wackywendell/primes/tree/master"
+
+[lib]
+# Disable benches in the normal library, we don't need them
+# Without disabling this, running cargo bench -- --something-else gets somehow passed to both
+# the cargo bench binary and the compiled benches binary
+bench = false
+
+[dev-dependencies]
+criterion = "0.3.1"
+
+[[bench]]
+name = "benches"
+harness = false
