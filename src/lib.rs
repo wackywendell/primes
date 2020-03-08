@@ -63,8 +63,8 @@ case, but slower in the long term as they do not use any caching of primes.
 #![doc(html_root_url = "https://wackywendell.github.io/primes/")]
 
 use std::cmp::Ordering::{Equal, Greater, Less};
-use std::collections::hash_map::Entry;
-use std::collections::HashMap;
+use std::cmp::Reverse;
+use std::collections::BinaryHeap;
 use std::ops::Index;
 use std::slice;
 
@@ -82,9 +82,29 @@ A prime generator, using the Trial Division method.
 Create with `let mut pset = TrialDivision::new()`, and then use `pset.iter()` to iterate over all
 primes.
 **/
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct TrialDivision {
     lst: Vec<u64>,
+}
+
+const WHEEL30: [u64; 8] = [1, 7, 11, 13, 17, 19, 23, 29];
+
+#[derive(Default, Copy, Clone)]
+struct Wheel30 {
+    base: u64,
+    ix: usize,
+}
+
+impl Wheel30 {
+    pub fn next(&mut self) -> u64 {
+        let value = self.base + WHEEL30[self.ix];
+        self.ix += 1;
+        if self.ix >= WHEEL30.len() {
+            self.ix = 0;
+            self.base += 30;
+        }
+        value
+    }
 }
 
 /**
@@ -93,9 +113,10 @@ than the Trial Division method, but slower earlier on.
 
 Create with `let mut pset = Sieve::new()`, and then use `pset.iter()` to iterate over all primes.
 **/
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Sieve {
     primes: Vec<u64>,
+    wheel: Wheel30,
 
     // Keys are composites, values are prime factors.
     //
@@ -103,7 +124,7 @@ pub struct Sieve {
     //
     // Each entry corresponds to the last composite "crossed off" by the given prime,
     // not including any composite less than the values in 'primes'.
-    sieve: HashMap<u64, u64>,
+    sieve: BinaryHeap<Reverse<(u64, u64)>>,
 }
 
 /// An iterator over generated primes. Created by `PrimeSet::iter` or
@@ -152,45 +173,51 @@ impl PrimeSetBasics for TrialDivision {
 impl Sieve {
     /// A new prime generator, primed with 2 and 3
     pub fn new() -> Sieve {
-        let primes = vec![2, 3];
-        let mut sieve = HashMap::new();
-        sieve.insert(9, 3);
-
-        Sieve { primes, sieve }
+        Sieve {
+            primes: vec![2, 3, 5],
+            sieve: BinaryHeap::new(),
+            wheel: Wheel30 { base: 0, ix: 1 },
+        }
     }
 
     // insert a prime and its composite. If the composite is already occupied, we'll increase
     // the composite by prime and put it there, repeating as necessary.
     fn insert(&mut self, prime: u64, composite: u64) {
-        for n in 0.. {
-            // We can skip composite + prime, because its even, so go straight to
-            // composite + 2*prime. If that's already "crossed off" (in self.sieve),
-            // go on to composite + 4*prime and so on.
-            let value = composite + prime * 2 * n;
-            if let Entry::Vacant(v) = self.sieve.entry(value) {
-                v.insert(prime);
-                return;
-            }
-        }
+        self.sieve.push(Reverse((composite, prime)));
     }
 }
 
 impl PrimeSetBasics for Sieve {
     /// Finds one more prime, and adds it to the list
     fn expand(&mut self) {
-        let mut nextp = *self.primes.last().unwrap();
+        let mut nextp = self.wheel.next();
         loop {
-            nextp += 2;
-            let factor = match self.sieve.entry(nextp) {
-                Entry::Vacant(_) => {
-                    self.sieve.insert(nextp * nextp, nextp);
+            let (composite, factor) = match self.sieve.peek() {
+                None => {
+                    self.insert(nextp, nextp * nextp);
                     self.primes.push(nextp);
                     return;
                 }
-                Entry::Occupied(o) => *o.get(),
+                Some(&Reverse(v)) => v,
             };
-
-            self.insert(factor, nextp + 2 * factor);
+            match composite.cmp(&nextp) {
+                Less => {
+                    let _ = self.sieve.pop();
+                    self.insert(factor, composite + 2 * factor);
+                }
+                Equal => {
+                    let _ = self.sieve.pop();
+                    self.insert(factor, composite + 2 * factor);
+                    // 'nextp' isn't prime, so move to one that might be
+                    nextp = self.wheel.next();
+                }
+                Greater => {
+                    // nextp is prime!
+                    self.insert(nextp, nextp * nextp);
+                    self.primes.push(nextp);
+                    return;
+                }
+            }
         }
     }
 
