@@ -12,22 +12,20 @@ fn bench_primes(c: &mut Criterion) {
     sizes.sort();
     sizes.dedup();
 
-    let mut group = c.benchmark_group("TrialDivision::find");
+    let mut group = c.benchmark_group("find");
     for &size in sizes.iter() {
         group.throughput(Throughput::Elements(size));
-        group.bench_with_input(BenchmarkId::from_parameter(size), &size, |b, &size| {
-            b.iter(|| {
-                let mut pset = TrialDivision::new();
-                black_box(pset.find(size))
-            })
-        });
-    }
-    group.finish();
-
-    let mut group = c.benchmark_group("Sieve::find");
-    for &size in sizes.iter() {
-        group.throughput(Throughput::Elements(size));
-        group.bench_with_input(BenchmarkId::from_parameter(size), &size, |b, &size| {
+        group.bench_with_input(
+            BenchmarkId::new("TrialDivision", size),
+            &size,
+            |b, &size| {
+                b.iter(|| {
+                    let mut pset = TrialDivision::new();
+                    black_box(pset.find(size))
+                })
+            },
+        );
+        group.bench_with_input(BenchmarkId::new("Sieve", size), &size, |b, &size| {
             b.iter(|| {
                 let mut pset = Sieve::new();
                 black_box(pset.find(size))

@@ -6,9 +6,9 @@ A basic library for finding primes, providing a basic Iterator over all primes. 
 The simplest usage is simply to create an `Iterator`:
 
 ```
-use primes::{TrialDivision, PrimeSet};
+use primes::{Sieve, PrimeSet};
 
-let mut pset = TrialDivision::new();
+let mut pset = Sieve::new();
 
 for (ix, n) in pset.iter().enumerate().take(10) {
     println!("Prime {}: {}", ix, n);
@@ -24,9 +24,9 @@ for the given test, and primes are cached for later use.
 # Example: Find the first prime after 1 million
 
 ```
-use primes::{TrialDivision, PrimeSet};
+use primes::{Sieve, PrimeSet};
 
-let mut pset = TrialDivision::new();
+let mut pset = Sieve::new();
 let (ix, n) = pset.find(1_000_000);
 
 println!("Prime {}: {}", ix, n);
@@ -34,9 +34,9 @@ println!("Prime {}: {}", ix, n);
 
 # Example: Find the first ten primes *after* the thousandth prime
 ```
-use primes::{TrialDivision, PrimeSet};
+use primes::{Sieve, PrimeSet};
 
-let mut pset = TrialDivision::new();
+let mut pset = Sieve::new();
 for (ix, n) in pset.iter().enumerate().skip(1_000).take(10) {
     println!("Prime {}: {}", ix, n);
 }
@@ -44,9 +44,9 @@ for (ix, n) in pset.iter().enumerate().skip(1_000).take(10) {
 
 # Example: Find the first prime greater than 1000
 ```
-use primes::{TrialDivision, PrimeSet};
+use primes::{Sieve, PrimeSet};
 
-let mut pset = TrialDivision::new();
+let mut pset = Sieve::new();
 let (ix, n) = pset.find(1_000);
 println!("The first prime after 1000 is the {}th prime: {}", ix, n);
 
