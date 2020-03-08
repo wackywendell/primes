@@ -4,13 +4,19 @@ use primes::PrimeSet;
 
 fn bench_primes(c: &mut Criterion) {
     let mut group = c.benchmark_group("PrimeSet::find");
-    for size in [
-        100, 200, 500, 1_000, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_000, 500_000,
-    ]
-    .iter()
-    {
-        group.throughput(Throughput::Elements(*size as u64));
-        group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
+
+    let mut sizes: Vec<u64> = Vec::new();
+    for &base in &[5_000, 50_000] {
+        for size in 2..=20 {
+            sizes.push(base / 2 * size);
+        }
+    }
+    sizes.sort();
+    sizes.dedup();
+
+    for &size in sizes.iter() {
+        group.throughput(Throughput::Elements(size));
+        group.bench_with_input(BenchmarkId::from_parameter(size), &size, |b, &size| {
             b.iter(|| {
                 let mut pset = PrimeSet::new();
                 black_box(pset.find(size))
