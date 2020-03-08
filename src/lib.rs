@@ -6,9 +6,9 @@ A basic library for finding primes, providing a basic Iterator over all primes. 
 The simplest usage is simply to create an `Iterator`:
 
 ```
-use primes::PrimeSet;
+use primes::{TrialDivision, PrimeSet};
 
-let mut pset = PrimeSet::new();
+let mut pset = TrialDivision::new();
 
 for (ix, n) in pset.iter().enumerate().take(10) {
     println!("Prime {}: {}", ix, n);
@@ -24,9 +24,9 @@ for the given test, and primes are cached for later use.
 # Example: Find the first prime after 1 million
 
 ```
-use primes::PrimeSet;
+use primes::{TrialDivision, PrimeSet};
 
-let mut pset = PrimeSet::new();
+let mut pset = TrialDivision::new();
 let (ix, n) = pset.find(1_000_000);
 
 println!("Prime {}: {}", ix, n);
@@ -34,9 +34,9 @@ println!("Prime {}: {}", ix, n);
 
 # Example: Find the first ten primes *after* the thousandth prime
 ```
-use primes::PrimeSet;
+use primes::{TrialDivision, PrimeSet};
 
-let mut pset = PrimeSet::new();
+let mut pset = TrialDivision::new();
 for (ix, n) in pset.iter().enumerate().skip(1_000).take(10) {
     println!("Prime {}: {}", ix, n);
 }
@@ -44,17 +44,17 @@ for (ix, n) in pset.iter().enumerate().skip(1_000).take(10) {
 
 # Example: Find the first prime greater than 1000
 ```
-use primes::PrimeSet;
+use primes::{TrialDivision, PrimeSet};
 
-let mut pset = PrimeSet::new();
+let mut pset = TrialDivision::new();
 let (ix, n) = pset.find(1_000);
 println!("The first prime after 1000 is the {}th prime: {}", ix, n);
 
 assert_eq!(pset.find(n), (ix, n));
 ```
 
-For more info on use, see `PrimeSet`, a class which handles the Sieve and has multiple methods for
-iterating over primes.
+For more info on use, see `PrimeSet`, a class which encapsulates most of the functionality and has
+multiple methods for iterating over primes.
 
 This also provides a few functions unconnected to `PrimeSet`, which will be faster for the first
 case, but slower in the long term as they do not use any caching of primes.
@@ -66,31 +66,43 @@ use std::cmp::Ordering::{Equal, Greater, Less};
 use std::ops::Index;
 use std::slice;
 
-/** A prime generator, using the Sieve of Eratosthenes.
+pub trait PrimeSetBasics {
+    /// Finds one more prime, and adds it to the list
+    fn expand(&mut self);
 
-Create with `let mut pset = PrimeSet::new()`, and then use `pset.iter()` to iterate over all primes.
+    /// Return all primes found so far as a slice
+    fn list(&self) -> &[u64];
+}
+
+/**
+A prime generator, using the Trial Division method.
+
+Create with `let mut pset = TrialDivision::new()`, and then use `pset.iter()` to iterate over all
+primes.
 **/
 #[derive(Default)]
-pub struct PrimeSet {
+pub struct TrialDivision {
     lst: Vec<u64>,
 }
 
 /// An iterator over generated primes. Created by `PrimeSet::iter` or
 /// `PrimeSet::generator`
-pub struct PrimeSetIter<'a> {
-    p: &'a mut PrimeSet,
+pub struct PrimeSetIter<'a, P: PrimeSet> {
+    p: &'a mut P,
     n: usize,
     expand: bool,
 }
 
-impl PrimeSet {
+impl TrialDivision {
     /// A new prime generator, primed with 2 and 3
-    pub fn new() -> PrimeSet {
-        PrimeSet { lst: vec![2, 3] }
+    pub fn new() -> TrialDivision {
+        TrialDivision { lst: vec![2, 3] }
     }
+}
 
+impl PrimeSetBasics for TrialDivision {
     /// Finds one more prime, and adds it to the list
-    pub fn expand(&mut self) {
+    fn expand(&mut self) {
         let mut l: u64 = self.lst[self.lst.len() - 1] + 2;
         let mut remainder = 0;
         loop {
@@ -110,22 +122,24 @@ impl PrimeSet {
         }
     }
 
-    /// Number of primes found so far
-    pub fn len(&self) -> usize {
-        self.lst.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        false
-    }
-
     /// Return all primes found so far as a slice
-    pub fn list(&self) -> &[u64] {
+    fn list(&self) -> &[u64] {
         &self.lst[..]
+    }
+}
+
+pub trait PrimeSet: PrimeSetBasics + Sized {
+    /// Number of primes found so far
+    fn len(&self) -> usize {
+        self.list().len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.list().is_empty()
     }
 
     /// Iterator over all primes not yet found
-    pub fn generator(&mut self) -> PrimeSetIter {
+    fn generator(&mut self) -> PrimeSetIter<Self> {
         let myn = self.len();
         PrimeSetIter {
             p: self,
@@ -136,7 +150,7 @@ impl PrimeSet {
 
     /// Iterator over all primes, starting with 2. If you don't care about the "state" of the
     /// `PrimeSet`, this is what you want!
-    pub fn iter(&mut self) -> PrimeSetIter {
+    fn iter(&mut self) -> PrimeSetIter<Self> {
         PrimeSetIter {
             p: self,
             n: 0,
@@ -145,8 +159,8 @@ impl PrimeSet {
     }
 
     /// Iterator over just the primes found so far
-    pub fn iter_vec(&self) -> slice::Iter<u64> {
-        self.lst.iter()
+    fn iter_vec(&self) -> slice::Iter<u64> {
+        self.list().iter()
     }
 
     /// Find the next largest prime from a number
@@ -154,8 +168,8 @@ impl PrimeSet {
     /// Returns `(idx, prime)`
     ///
     /// Note that if `n` is prime, then the output will be `(idx, n)`
-    pub fn find(&mut self, n: u64) -> (usize, u64) {
-        while n > *(self.lst.last().unwrap_or(&0)) {
+    fn find(&mut self, n: u64) -> (usize, u64) {
+        while n > *(self.list().last().unwrap_or(&0)) {
             self.expand();
         }
         self.find_vec(n).unwrap()
@@ -165,8 +179,7 @@ impl PrimeSet {
     ///
     /// Note that this only requires primes up to `n.sqrt()` to be generated, and will generate
     /// them as necessary on its own.
-    #[cfg_attr(feature = "cargo-clippy", allow(clippy::wrong_self_convention))]
-    pub fn is_prime(&mut self, n: u64) -> bool {
+    fn is_prime(&mut self, n: u64) -> bool {
         if n <= 1 {
             return false;
         }
@@ -189,8 +202,8 @@ impl PrimeSet {
     /// Returns `(idx, prime)`
     ///
     /// Note that if `n` is prime, then the output will be `(idx, n)`
-    pub fn find_vec(&self, n: u64) -> Option<(usize, u64)> {
-        if n > *(self.lst.last().unwrap_or(&0)) {
+    fn find_vec(&self, n: u64) -> Option<(usize, u64)> {
+        if n > *(self.list().last().unwrap_or(&0)) {
             return None;
         }
 
@@ -200,8 +213,8 @@ impl PrimeSet {
         // Binary search algorithm
         while lim != 0 {
             let ix = base + (lim >> 1);
-            match self.lst[ix].cmp(&n) {
-                Equal => return Some((ix, self.lst[ix])),
+            match self.list()[ix].cmp(&n) {
+                Equal => return Some((ix, self.list()[ix])),
                 Less => {
                     base = ix + 1;
                     lim -= 1;
@@ -210,19 +223,19 @@ impl PrimeSet {
             }
             lim >>= 1;
         }
-        Some((base, self.lst[base]))
+        Some((base, self.list()[base]))
     }
 
     /// Get the nth prime, even if we haven't yet found it
-    pub fn get(&mut self, index: usize) -> u64 {
-        for _ in 0..(index as isize) + 1 - (self.lst.len() as isize) {
+    fn get(&mut self, index: usize) -> u64 {
+        for _ in 0..(index as isize) + 1 - (self.list().len() as isize) {
             self.expand();
         }
-        self.lst[index]
+        self.list()[index]
     }
 
     /// Get the prime factors of a number, starting from 2, including repeats
-    pub fn prime_factors(&mut self, n: u64) -> Vec<u64> {
+    fn prime_factors(&mut self, n: u64) -> Vec<u64> {
         if n == 1 {
             return Vec::new();
         }
@@ -246,17 +259,19 @@ impl PrimeSet {
     }
 }
 
-impl Index<usize> for PrimeSet {
+impl<P: PrimeSetBasics> PrimeSet for P {}
+
+impl Index<usize> for TrialDivision {
     type Output = u64;
     fn index(&self, index: usize) -> &u64 {
-        &self.lst[index]
+        &self.list()[index]
     }
 }
 
-impl<'a> Iterator for PrimeSetIter<'a> {
+impl<'a, P: PrimeSet> Iterator for PrimeSetIter<'a, P> {
     type Item = u64;
     fn next(&mut self) -> Option<u64> {
-        while self.n >= self.p.len() {
+        while self.n >= self.p.list().len() {
             if self.expand {
                 self.p.expand()
             } else {
@@ -265,7 +280,7 @@ impl<'a> Iterator for PrimeSetIter<'a> {
         }
         self.n += 1;
 
-        let m = self.p.lst[self.n - 1];
+        let m = self.p.list()[self.n - 1];
 
         Some(m)
     }

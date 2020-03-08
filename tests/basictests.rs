@@ -1,8 +1,25 @@
-use primes::{factors, factors_uniq, is_prime, PrimeSet};
+use primes::{factors, factors_uniq, is_prime, PrimeSet, PrimeSetBasics, TrialDivision};
+
+#[test]
+fn test_primesetbasics() {
+    let mut pset = TrialDivision::new();
+    let ln = pset.list().len();
+    pset.expand();
+
+    assert_eq!(pset.list().len(), ln + 1);
+}
+
+#[test]
+fn test_primeset() {
+    let mut pset = TrialDivision::new();
+    let (_idx, p) = pset.find(10);
+
+    assert_eq!(p, 11);
+}
 
 #[test]
 fn test_iter() {
-    let mut pset = PrimeSet::new();
+    let mut pset = TrialDivision::new();
     let first_few = [2u64, 3, 5, 7, 11, 13, 17, 19, 23];
     for (m, &n) in pset.iter().zip(first_few.iter()) {
         assert_eq!(m, n);
@@ -11,7 +28,7 @@ fn test_iter() {
 
 #[test]
 fn test_find() {
-    let mut pset = PrimeSet::new();
+    let mut pset = TrialDivision::new();
 
     // pset is empty, so it needs to generate the primes
     assert_eq!(pset.find_vec(1000), None);
@@ -35,7 +52,7 @@ fn test_find() {
 
 #[test]
 fn test_primes() {
-    let mut pset = PrimeSet::new();
+    let mut pset = TrialDivision::new();
 
     // note: some are repeated, because the pset list grows as it goes
 
@@ -80,7 +97,7 @@ fn test_primes() {
 
 #[test]
 fn test_factors() {
-    let mut pset = PrimeSet::new();
+    let mut pset = TrialDivision::new();
 
     let ns = [
         (1, vec![]),
@@ -113,6 +130,6 @@ fn test_factors() {
         assert_eq!(unique_factors, unique_factors_exp);
     }
 
-    pset = PrimeSet::new();
+    pset = TrialDivision::new();
     assert_eq!(pset.prime_factors(12), vec!(2, 2, 3));
 }
