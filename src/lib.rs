@@ -63,6 +63,8 @@ case, but slower in the long term as they do not use any caching of primes.
 #![doc(html_root_url = "https://wackywendell.github.io/primes/")]
 
 use std::cmp::Ordering::{Equal, Greater, Less};
+use std::collections::hash_map::Entry;
+use std::collections::HashMap;
 use std::ops::Index;
 use std::slice;
 
@@ -85,6 +87,25 @@ pub struct TrialDivision {
     lst: Vec<u64>,
 }
 
+/**
+A prime generator, using the Sieve of Eratosthenes method. This is asymptotically more efficient
+than the Trial Division method, but slower earlier on.
+
+Create with `let mut pset = Sieve::new()`, and then use `pset.iter()` to iterate over all primes.
+**/
+#[derive(Default)]
+pub struct Sieve {
+    primes: Vec<u64>,
+
+    // Keys are composites, values are prime factors.
+    //
+    // Every prime is in here once.
+    //
+    // Each entry corresponds to the last composite "crossed off" by the given prime,
+    // not including any composite less than the values in 'primes'.
+    sieve: HashMap<u64, u64>,
+}
+
 /// An iterator over generated primes. Created by `PrimeSet::iter` or
 /// `PrimeSet::generator`
 pub struct PrimeSetIter<'a, P: PrimeSet> {
@@ -103,7 +124,7 @@ impl TrialDivision {
 impl PrimeSetBasics for TrialDivision {
     /// Finds one more prime, and adds it to the list
     fn expand(&mut self) {
-        let mut l: u64 = self.lst[self.lst.len() - 1] + 2;
+        let mut l: u64 = self.lst.last().unwrap() + 2;
         let mut remainder = 0;
         loop {
             for &n in &self.lst {
@@ -125,6 +146,57 @@ impl PrimeSetBasics for TrialDivision {
     /// Return all primes found so far as a slice
     fn list(&self) -> &[u64] {
         &self.lst[..]
+    }
+}
+
+impl Sieve {
+    /// A new prime generator, primed with 2 and 3
+    pub fn new() -> Sieve {
+        let primes = vec![2, 3];
+        let mut sieve = HashMap::new();
+        sieve.insert(9, 3);
+
+        Sieve { primes, sieve }
+    }
+
+    // insert a prime and its composite. If the composite is already occupied, we'll increase
+    // the composite by prime and put it there, repeating as necessary.
+    fn insert(&mut self, prime: u64, composite: u64) {
+        for n in 0.. {
+            // We can skip composite + prime, because its even, so go straight to
+            // composite + 2*prime. If that's already "crossed off" (in self.sieve),
+            // go on to composite + 4*prime and so on.
+            let value = composite + prime * 2 * n;
+            if let Entry::Vacant(v) = self.sieve.entry(value) {
+                v.insert(prime);
+                return;
+            }
+        }
+    }
+}
+
+impl PrimeSetBasics for Sieve {
+    /// Finds one more prime, and adds it to the list
+    fn expand(&mut self) {
+        let mut nextp = *self.primes.last().unwrap();
+        loop {
+            nextp += 2;
+            let factor = match self.sieve.entry(nextp) {
+                Entry::Vacant(_) => {
+                    self.sieve.insert(nextp * nextp, nextp);
+                    self.primes.push(nextp);
+                    return;
+                }
+                Entry::Occupied(o) => *o.get(),
+            };
+
+            self.insert(factor, nextp + 2 * factor);
+        }
+    }
+
+    /// Return all primes found so far as a slice
+    fn list(&self) -> &[u64] {
+        &self.primes[..]
     }
 }
 

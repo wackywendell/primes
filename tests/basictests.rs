@@ -1,4 +1,4 @@
-use primes::{factors, factors_uniq, is_prime, PrimeSet, PrimeSetBasics, TrialDivision};
+use primes::{factors, factors_uniq, is_prime, PrimeSet, PrimeSetBasics, Sieve, TrialDivision};
 
 #[test]
 fn test_primesetbasics() {
@@ -132,4 +132,16 @@ fn test_factors() {
 
     pset = TrialDivision::new();
     assert_eq!(pset.prime_factors(12), vec!(2, 2, 3));
+}
+
+// Test that the Sieve method works the same as the TrialDivision method
+#[test]
+fn test_sieve() {
+    let mut sieve = Sieve::new();
+    let mut td = TrialDivision::new();
+
+    let sieved: Vec<u64> = sieve.iter().take(1000).collect();
+    let trialled: Vec<u64> = td.iter().take(1000).collect();
+
+    assert_eq!(sieved, trialled);
 }
