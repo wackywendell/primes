@@ -451,3 +451,22 @@ pub fn is_prime(n: u64) -> bool {
     }
     firstfac(n) == n
 }
+
+/// Euler's totient function, the number of primes between 1 and n inclusive that are relatively
+/// prime to n.
+pub fn totient(n: u64) -> u64 {
+    if n <= 0 {
+        return 0;
+    }
+    let mut r = 1u64;
+    let mut prev = 1u64;
+    for i in factors(n) {
+        if i == prev {
+          r *= i;
+        } else {
+            r *= i - 1;
+        }
+        prev = i;
+    }
+    r
+}

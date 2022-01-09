@@ -1,4 +1,4 @@
-use primes::{factors, factors_uniq, is_prime, PrimeSet, PrimeSetBasics, Sieve, TrialDivision};
+use primes::{factors, factors_uniq, is_prime, totient, PrimeSet, PrimeSetBasics, Sieve, TrialDivision};
 
 #[test]
 fn test_primesetbasics() {
@@ -144,4 +144,15 @@ fn test_sieve() {
     let trialled: Vec<u64> = td.iter().take(1000).collect();
 
     assert_eq!(sieved, trialled);
+}
+
+#[test]
+fn test_totient() {
+    assert_eq!(totient(1), 1);
+    assert_eq!(totient(12), 4);
+    assert_eq!(totient(17), 16);
+    assert_eq!(totient(120), 32);
+    assert_eq!(totient(248), 120);
+    assert_eq!(totient(100000000), 40000000);
+    assert_eq!(totient(10493938559900), 4197575423920);
 }
