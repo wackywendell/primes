@@ -4,7 +4,7 @@ name = "primes"
 version = "0.4.0"
 authors = ["Wendell Smith <wendellwsmith@gmail.com>"]
 license="BSD-3-Clause"
-edition = "2018"
+edition = "2021"
 
 keywords = ["math", "algorithms"]
 
