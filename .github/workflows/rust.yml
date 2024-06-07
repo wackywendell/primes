@@ -20,3 +20,5 @@ jobs:
       run: cargo test --verbose
     - name: Run clippy
       run: cargo clippy --verbose
+    - name: Check fmt
+      run: cargo fmt --check --verbose
