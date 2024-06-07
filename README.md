@@ -12,9 +12,9 @@ This package provides an iterator over `all` primes, generating them lazily as i
 The simplest usage is simply to create an `Iterator`:
 
 ```
-use primes::PrimeSet;
+use primes::{PrimeSet as _, Sieve};
 
-let mut pset = PrimeSet::new();
+let mut pset = Sieve::new();
 
 for (ix, n) in pset.iter().enumerate().take(10) {
     println!("Prime {}: {}", ix, n);
