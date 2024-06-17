@@ -442,8 +442,10 @@ pub fn factors(mut x: u64) -> Vec<u64> {
 
     while x > 1 {
         let factor = first_factor(x);
-        factors.push(factor);
-        x /= factor;
+        while x % factor == 0 {
+            factors.push(factor);
+            x /= factor;
+        }
     }
 
     factors
