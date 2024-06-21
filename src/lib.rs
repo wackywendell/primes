@@ -86,6 +86,7 @@ struct Wheel {
     offset: u64,
     index: usize,
     factor: u64,
+    value: u64,
 }
 
 /**
@@ -126,11 +127,8 @@ impl Wheel {
             offset: 0,
             index: 0,
             factor: 1,
+            value: 0,
         }
-    }
-
-    fn get_value(&self) -> u64 {
-        self.factor * (self.offset + WHEEL_235[self.index])
     }
 }
 
@@ -145,7 +143,9 @@ impl Iterator for Wheel {
             self.index += 1;
         }
 
-        Some(self.get_value())
+        self.value = self.factor * (self.offset + WHEEL_235[self.index]);
+
+        Some(self.value)
     }
 }
 
@@ -157,7 +157,7 @@ impl Default for Wheel {
 
 impl PartialEq for Wheel {
     fn eq(&self, other: &Self) -> bool {
-        self.get_value().eq(&other.get_value())
+        self.value.eq(&other.value)
     }
 }
 
@@ -165,7 +165,7 @@ impl Eq for Wheel {}
 
 impl Ord for Wheel {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.get_value().cmp(&other.get_value())
+        self.value.cmp(&other.value)
     }
 }
 
@@ -235,13 +235,14 @@ impl Sieve {
     fn insert(&mut self, prime: u64) {
         let mut wheel = self.wheel;
         wheel.factor = prime;
+        wheel.value = prime * prime;
         self.primes.push(prime);
         self.sieve.push(Reverse(wheel));
     }
 
     fn adjust_sieve(&mut self, n: u64) {
         while let Some(mut wheel) = self.sieve.peek_mut() {
-            if wheel.0.get_value() > n {
+            if wheel.0.value > n {
                 break;
             }
             let _ = wheel.0.next();
@@ -260,7 +261,7 @@ impl PrimeSetBasics for Sieve {
                 return;
             };
 
-            if wheel.0.get_value() > n {
+            if wheel.0.value > n {
                 self.insert(n);
                 return;
             }
