@@ -259,8 +259,6 @@ impl Sieve {
         }
     }
 
-    // insert a prime and its composite. If the composite is already occupied, we'll increase
-    // the composite by prime and put it there, repeating as necessary.
     fn insert(&mut self, prime: u64) {
         let mut wheel = self.wheel;
         wheel.factor = prime;
@@ -496,7 +494,7 @@ pub fn factors_uniq(mut x: u64) -> Vec<u64> {
     factors
 }
 
-/// Test whether a number is prime. Checks every odd number up to `sqrt(n)`.
+/// Test whether a number is prime
 pub fn is_prime(n: u64) -> bool {
     if n <= 1 {
         return false;
