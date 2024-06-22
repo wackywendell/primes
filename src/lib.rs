@@ -147,7 +147,6 @@ pub struct Sieve {
 pub struct PrimeSetIter<'a, P: PrimeSet> {
     p: &'a mut P,
     n: usize,
-    expand: bool,
 }
 
 impl Wheel {
@@ -316,21 +315,13 @@ pub trait PrimeSet: PrimeSetBasics + Sized {
     /// Iterator over all primes not yet found
     fn generator(&mut self) -> PrimeSetIter<Self> {
         let myn = self.len();
-        PrimeSetIter {
-            p: self,
-            n: myn,
-            expand: true,
-        }
+        PrimeSetIter { p: self, n: myn }
     }
 
     /// Iterator over all primes, starting with 2. If you don't care about the "state" of the
     /// `PrimeSet`, this is what you want!
     fn iter(&mut self) -> PrimeSetIter<Self> {
-        PrimeSetIter {
-            p: self,
-            n: 0,
-            expand: true,
-        }
+        PrimeSetIter { p: self, n: 0 }
     }
 
     /// Iterator over just the primes found so far
@@ -440,11 +431,7 @@ impl<'a, P: PrimeSet> Iterator for PrimeSetIter<'a, P> {
     type Item = u64;
     fn next(&mut self) -> Option<u64> {
         while self.n >= self.p.list().len() {
-            if self.expand {
-                self.p.expand();
-            } else {
-                return None;
-            }
+            self.p.expand();
         }
         self.n += 1;
 
