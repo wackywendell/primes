@@ -76,6 +76,48 @@ pub trait PrimeSetBasics {
     fn list(&self) -> &[u64];
 }
 
+const FIRST_PRIMES: [u64; 5] = [2, 3, 5, 7, 11];
+const WHEEL_LENGTH: usize = 480;
+const WHEEL_CIRCUMFERENCE: u64 = WHEEL_11[WHEEL_LENGTH - 1] + 1;
+const WHEEL_11: [u64; WHEEL_LENGTH] = [
+    1, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103,
+    107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 169, 173, 179, 181, 191, 193, 197,
+    199, 211, 221, 223, 227, 229, 233, 239, 241, 247, 251, 257, 263, 269, 271, 277, 281, 283, 289,
+    293, 299, 307, 311, 313, 317, 323, 331, 337, 347, 349, 353, 359, 361, 367, 373, 377, 379, 383,
+    389, 391, 397, 401, 403, 409, 419, 421, 431, 433, 437, 439, 443, 449, 457, 461, 463, 467, 479,
+    481, 487, 491, 493, 499, 503, 509, 521, 523, 527, 529, 533, 541, 547, 551, 557, 559, 563, 569,
+    571, 577, 587, 589, 593, 599, 601, 607, 611, 613, 617, 619, 629, 631, 641, 643, 647, 653, 659,
+    661, 667, 673, 677, 683, 689, 691, 697, 701, 703, 709, 713, 719, 727, 731, 733, 739, 743, 751,
+    757, 761, 767, 769, 773, 779, 787, 793, 797, 799, 809, 811, 817, 821, 823, 827, 829, 839, 841,
+    851, 853, 857, 859, 863, 871, 877, 881, 883, 887, 893, 899, 901, 907, 911, 919, 923, 929, 937,
+    941, 943, 947, 949, 953, 961, 967, 971, 977, 983, 989, 991, 997, 1003, 1007, 1009, 1013, 1019,
+    1021, 1027, 1031, 1033, 1037, 1039, 1049, 1051, 1061, 1063, 1069, 1073, 1079, 1081, 1087, 1091,
+    1093, 1097, 1103, 1109, 1117, 1121, 1123, 1129, 1139, 1147, 1151, 1153, 1157, 1159, 1163, 1171,
+    1181, 1187, 1189, 1193, 1201, 1207, 1213, 1217, 1219, 1223, 1229, 1231, 1237, 1241, 1247, 1249,
+    1259, 1261, 1271, 1273, 1277, 1279, 1283, 1289, 1291, 1297, 1301, 1303, 1307, 1313, 1319, 1321,
+    1327, 1333, 1339, 1343, 1349, 1357, 1361, 1363, 1367, 1369, 1373, 1381, 1387, 1391, 1399, 1403,
+    1409, 1411, 1417, 1423, 1427, 1429, 1433, 1439, 1447, 1451, 1453, 1457, 1459, 1469, 1471, 1481,
+    1483, 1487, 1489, 1493, 1499, 1501, 1511, 1513, 1517, 1523, 1531, 1537, 1541, 1543, 1549, 1553,
+    1559, 1567, 1571, 1577, 1579, 1583, 1591, 1597, 1601, 1607, 1609, 1613, 1619, 1621, 1627, 1633,
+    1637, 1643, 1649, 1651, 1657, 1663, 1667, 1669, 1679, 1681, 1691, 1693, 1697, 1699, 1703, 1709,
+    1711, 1717, 1721, 1723, 1733, 1739, 1741, 1747, 1751, 1753, 1759, 1763, 1769, 1777, 1781, 1783,
+    1787, 1789, 1801, 1807, 1811, 1817, 1819, 1823, 1829, 1831, 1843, 1847, 1849, 1853, 1861, 1867,
+    1871, 1873, 1877, 1879, 1889, 1891, 1901, 1907, 1909, 1913, 1919, 1921, 1927, 1931, 1933, 1937,
+    1943, 1949, 1951, 1957, 1961, 1963, 1973, 1979, 1987, 1993, 1997, 1999, 2003, 2011, 2017, 2021,
+    2027, 2029, 2033, 2039, 2041, 2047, 2053, 2059, 2063, 2069, 2071, 2077, 2081, 2083, 2087, 2089,
+    2099, 2111, 2113, 2117, 2119, 2129, 2131, 2137, 2141, 2143, 2147, 2153, 2159, 2161, 2171, 2173,
+    2179, 2183, 2197, 2201, 2203, 2207, 2209, 2213, 2221, 2227, 2231, 2237, 2239, 2243, 2249, 2251,
+    2257, 2263, 2267, 2269, 2273, 2279, 2281, 2287, 2291, 2293, 2297, 2309,
+];
+
+#[derive(Copy, Clone)]
+struct Wheel {
+    offset: u64,
+    index: usize,
+    factor: u64,
+    value: u64,
+}
+
 /**
 A prime generator, using the Trial Division method.
 
@@ -84,33 +126,7 @@ primes.
 **/
 #[derive(Clone)]
 pub struct TrialDivision {
-    lst: Vec<u64>,
-}
-
-const WHEEL30: [u64; 8] = [1, 7, 11, 13, 17, 19, 23, 29];
-
-#[derive(Copy, Clone)]
-struct Wheel30 {
-    base: u64,
-    ix: usize,
-}
-
-impl Wheel30 {
-    pub fn next(&mut self) -> u64 {
-        let value = self.base + WHEEL30[self.ix];
-        self.ix += 1;
-        if self.ix >= WHEEL30.len() {
-            self.ix = 0;
-            self.base += 30;
-        }
-        value
-    }
-}
-
-impl Default for Wheel30 {
-    fn default() -> Self {
-        Wheel30 { base: 0, ix: 1 }
-    }
+    list: Vec<u64>,
 }
 
 /**
@@ -122,15 +138,8 @@ Create with `let mut pset = Sieve::new()`, and then use `pset.iter()` to iterate
 #[derive(Clone)]
 pub struct Sieve {
     primes: Vec<u64>,
-    wheel: Wheel30,
-
-    // Keys are composites, values are prime factors.
-    //
-    // Every prime is in here once.
-    //
-    // Each entry corresponds to the last composite "crossed off" by the given prime,
-    // not including any composite less than the values in 'primes'.
-    sieve: BinaryHeap<Reverse<(u64, u64)>>,
+    wheel: Wheel,
+    sieve: BinaryHeap<Reverse<Wheel>>,
 }
 
 /// An iterator over generated primes. Created by `PrimeSet::iter` or
@@ -138,13 +147,66 @@ pub struct Sieve {
 pub struct PrimeSetIter<'a, P: PrimeSet> {
     p: &'a mut P,
     n: usize,
-    expand: bool,
+}
+
+impl Wheel {
+    fn new() -> Self {
+        Self {
+            offset: 0,
+            index: 0,
+            factor: 1,
+            value: 0,
+        }
+    }
+}
+
+impl Iterator for Wheel {
+    type Item = u64;
+
+    fn next(&mut self) -> Option<u64> {
+        if self.index + 1 >= WHEEL_LENGTH {
+            self.index = 0;
+            self.offset += WHEEL_CIRCUMFERENCE;
+        } else {
+            self.index += 1;
+        }
+
+        self.value = self.factor * (self.offset + WHEEL_11[self.index]);
+
+        Some(self.value)
+    }
+}
+
+impl Default for Wheel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl PartialEq for Wheel {
+    fn eq(&self, other: &Self) -> bool {
+        self.value.eq(&other.value)
+    }
+}
+
+impl Eq for Wheel {}
+
+impl Ord for Wheel {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.value.cmp(&other.value)
+    }
+}
+
+impl PartialOrd for Wheel {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl TrialDivision {
     /// A new prime generator, primed with 2 and 3
     pub fn new() -> TrialDivision {
-        TrialDivision { lst: vec![2, 3] }
+        TrialDivision { list: vec![2, 3] }
     }
 }
 
@@ -157,28 +219,23 @@ impl Default for TrialDivision {
 impl PrimeSetBasics for TrialDivision {
     /// Finds one more prime, and adds it to the list
     fn expand(&mut self) {
-        let mut l: u64 = self.lst.last().unwrap() + 2;
-        let mut remainder = 0;
-        loop {
-            for &n in &self.lst {
-                remainder = l % n;
-                if remainder == 0 || n * n > l {
-                    break;
-                }
-            }
+        let last_prime = self.list.last().unwrap();
+        let next_prime = (last_prime + 2..)
+            .step_by(2)
+            .find(|&n| {
+                self.list()
+                    .iter()
+                    .take_while(|&p| p * p <= n)
+                    .all(|&p| n % p > 0)
+            })
+            .unwrap();
 
-            if remainder != 0 {
-                self.lst.push(l);
-                break;
-            };
-
-            l += 2;
-        }
+        self.list.push(next_prime);
     }
 
     /// Return all primes found so far as a slice
     fn list(&self) -> &[u64] {
-        &self.lst[..]
+        &self.list[..]
     }
 }
 
@@ -189,53 +246,53 @@ impl Default for Sieve {
 }
 
 impl Sieve {
-    /// A new prime generator, primed with 2 and 3
-    pub fn new() -> Sieve {
+    pub fn new() -> Self {
+        Self::from_seed(FIRST_PRIMES.to_vec(), Wheel::new())
+    }
+
+    fn from_seed(seed_primes: Vec<u64>, wheel: Wheel) -> Self {
         Sieve {
-            primes: vec![2, 3, 5],
+            primes: seed_primes,
             sieve: BinaryHeap::new(),
-            wheel: Wheel30 { base: 0, ix: 1 },
+            wheel,
         }
     }
 
-    // insert a prime and its composite. If the composite is already occupied, we'll increase
-    // the composite by prime and put it there, repeating as necessary.
-    fn insert(&mut self, prime: u64, composite: u64) {
-        self.sieve.push(Reverse((composite, prime)));
+    fn insert(&mut self, prime: u64) {
+        let mut wheel = self.wheel;
+        wheel.factor = prime;
+        wheel.value = prime * prime;
+        self.primes.push(prime);
+        self.sieve.push(Reverse(wheel));
+    }
+
+    fn adjust_sieve(&mut self, n: u64) {
+        while let Some(mut wheel) = self.sieve.peek_mut() {
+            if wheel.0.value > n {
+                break;
+            }
+            let _ = wheel.0.next();
+        }
     }
 }
 
 impl PrimeSetBasics for Sieve {
     /// Finds one more prime, and adds it to the list
     fn expand(&mut self) {
-        let mut nextp = self.wheel.next();
         loop {
-            let (composite, factor) = match self.sieve.peek() {
-                None => {
-                    self.insert(nextp, nextp * nextp);
-                    self.primes.push(nextp);
-                    return;
-                }
-                Some(&Reverse(v)) => v,
+            let n = self.wheel.next().unwrap();
+
+            let Some(wheel) = self.sieve.peek() else {
+                self.insert(n);
+                return;
             };
-            match composite.cmp(&nextp) {
-                Less => {
-                    let _ = self.sieve.pop();
-                    self.insert(factor, composite + 2 * factor);
-                }
-                Equal => {
-                    let _ = self.sieve.pop();
-                    self.insert(factor, composite + 2 * factor);
-                    // 'nextp' isn't prime, so move to one that might be
-                    nextp = self.wheel.next();
-                }
-                Greater => {
-                    // nextp is prime!
-                    self.insert(nextp, nextp * nextp);
-                    self.primes.push(nextp);
-                    return;
-                }
+
+            if wheel.0.value > n {
+                self.insert(n);
+                return;
             }
+
+            self.adjust_sieve(n);
         }
     }
 
@@ -258,21 +315,13 @@ pub trait PrimeSet: PrimeSetBasics + Sized {
     /// Iterator over all primes not yet found
     fn generator(&mut self) -> PrimeSetIter<Self> {
         let myn = self.len();
-        PrimeSetIter {
-            p: self,
-            n: myn,
-            expand: true,
-        }
+        PrimeSetIter { p: self, n: myn }
     }
 
     /// Iterator over all primes, starting with 2. If you don't care about the "state" of the
     /// `PrimeSet`, this is what you want!
     fn iter(&mut self) -> PrimeSetIter<Self> {
-        PrimeSetIter {
-            p: self,
-            n: 0,
-            expand: true,
-        }
+        PrimeSetIter { p: self, n: 0 }
     }
 
     /// Iterator over just the primes found so far
@@ -286,10 +335,13 @@ pub trait PrimeSet: PrimeSetBasics + Sized {
     ///
     /// Note that if `n` is prime, then the output will be `(idx, n)`
     fn find(&mut self, n: u64) -> (usize, u64) {
-        while n > *(self.list().last().unwrap_or(&0)) {
-            self.expand();
+        loop {
+            match self.list().last() {
+                None => self.expand(),
+                Some(&p) if p < n => self.expand(),
+                _ => return self.find_vec(n).unwrap(),
+            }
         }
-        self.find_vec(n).unwrap()
     }
 
     /// Check if a number is prime
@@ -300,18 +352,8 @@ pub trait PrimeSet: PrimeSetBasics + Sized {
         if n <= 1 {
             return false;
         }
-        if n == 2 {
-            return true;
-        } // otherwise we get 2 % 2 == 0!
-        for m in self.iter() {
-            if n % m == 0 {
-                return false;
-            };
-            if m * m > n {
-                return true;
-            };
-        }
-        unreachable!("This iterator should not be empty.");
+
+        self.iter().take_while(|&m| m * m <= n).all(|m| n % m != 0)
     }
 
     /// Find the next largest prime from a number, if it is within the already-found list
@@ -324,55 +366,55 @@ pub trait PrimeSet: PrimeSetBasics + Sized {
             return None;
         }
 
-        let mut base: usize = 0;
-        let mut lim: usize = self.len();
+        let mut start = 0;
+        let mut end = self.len();
 
-        // Binary search algorithm
-        while lim != 0 {
-            let ix = base + (lim >> 1);
-            match self.list()[ix].cmp(&n) {
-                Equal => return Some((ix, self.list()[ix])),
+        while start < end {
+            let midpoint = start + (end - start) / 2;
+            let mid_value = self.list().get(midpoint)?;
+
+            match mid_value.cmp(&n) {
+                Equal => return Some((midpoint, *mid_value)),
                 Less => {
-                    base = ix + 1;
-                    lim -= 1;
+                    start = midpoint + 1;
                 }
-                Greater => (),
+                Greater => {
+                    end = midpoint;
+                }
             }
-            lim >>= 1;
         }
-        Some((base, self.list()[base]))
+
+        Some((start, self.list()[start]))
     }
 
     /// Get the nth prime, even if we haven't yet found it
     fn get(&mut self, index: usize) -> u64 {
-        for _ in 0..(index as isize) + 1 - (self.list().len() as isize) {
+        while self.list().len() < index + 1 {
             self.expand();
         }
         self.list()[index]
     }
 
     /// Get the prime factors of a number, starting from 2, including repeats
-    fn prime_factors(&mut self, n: u64) -> Vec<u64> {
-        if n == 1 {
-            return Vec::new();
-        }
-        let mut curn = n;
-        let mut lst: Vec<u64> = Vec::new();
+    fn prime_factors(&mut self, mut n: u64) -> Vec<u64> {
+        let mut factors = Vec::new();
+
         for p in self.iter() {
-            while curn % p == 0 {
-                lst.push(p);
-                curn /= p;
-                if curn == 1 {
-                    return lst;
-                }
+            while n % p == 0 {
+                factors.push(p);
+                n /= p;
             }
 
-            if p * p > curn {
-                lst.push(curn);
-                return lst;
+            if n < 2 {
+                return factors;
+            }
+
+            if p * p > n {
+                factors.push(n);
+                return factors;
             }
         }
-        unreachable!("This should be unreachable.");
+        unreachable!();
     }
 }
 
@@ -389,11 +431,7 @@ impl<'a, P: PrimeSet> Iterator for PrimeSetIter<'a, P> {
     type Item = u64;
     fn next(&mut self) -> Option<u64> {
         while self.n >= self.p.list().len() {
-            if self.expand {
-                self.p.expand()
-            } else {
-                return None;
-            }
+            self.p.expand();
         }
         self.n += 1;
 
@@ -403,69 +441,50 @@ impl<'a, P: PrimeSet> Iterator for PrimeSetIter<'a, P> {
     }
 }
 
-/// Find the first factor (other than 1) of a number
-fn firstfac(x: u64) -> u64 {
-    if x % 2 == 0 {
-        return 2;
-    };
-    // TODO: return to step_by
-    // for n in (3..).step_by(2).take_while(|m| m*m <= x) {
-    for n in (1..).map(|m| 2 * m + 1).take_while(|m| m * m <= x) {
-        if x % n == 0 {
-            return n;
-        };
-    }
-    // No factor found. It must be prime.
-    x
+/// Find the first prime factor of a number
+fn first_factor(x: u64) -> u64 {
+    let factors_to_check = FIRST_PRIMES.iter().copied().chain(Wheel::default());
+    factors_to_check
+        .take_while(|&n| n * n <= x)
+        .find(|&n| x % n == 0)
+        .unwrap_or(x)
 }
 
 /// Find all prime factors of a number
 /// Does not use a `PrimeSet`, but simply counts upwards
-pub fn factors(x: u64) -> Vec<u64> {
-    if x <= 1 {
-        return vec![];
-    };
-    let mut lst: Vec<u64> = Vec::new();
-    let mut curn = x;
-    loop {
-        let m = firstfac(curn);
-        lst.push(m);
-        if m == curn {
-            break;
-        } else {
-            curn /= m
-        };
+pub fn factors(mut x: u64) -> Vec<u64> {
+    let mut factors = Vec::new();
+
+    while x > 1 {
+        let factor = first_factor(x);
+        while x % factor == 0 {
+            factors.push(factor);
+            x /= factor;
+        }
     }
-    lst
+
+    factors
 }
 
 /// Find all unique prime factors of a number
-pub fn factors_uniq(x: u64) -> Vec<u64> {
-    if x <= 1 {
-        return vec![];
-    };
-    let mut lst: Vec<u64> = Vec::new();
-    let mut curn = x;
-    loop {
-        let m = firstfac(curn);
-        lst.push(m);
-        if curn == m {
-            break;
+pub fn factors_uniq(mut x: u64) -> Vec<u64> {
+    let mut factors = Vec::new();
+
+    while x > 1 {
+        let factor = first_factor(x);
+        while x % factor == 0 {
+            x /= factor;
         }
-        while curn % m == 0 {
-            curn /= m;
-        }
-        if curn == 1 {
-            break;
-        }
+        factors.push(factor);
     }
-    lst
+
+    factors
 }
 
-/// Test whether a number is prime. Checks every odd number up to `sqrt(n)`.
+/// Test whether a number is prime
 pub fn is_prime(n: u64) -> bool {
     if n <= 1 {
         return false;
     }
-    firstfac(n) == n
+    first_factor(n) == n
 }

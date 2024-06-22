@@ -48,6 +48,10 @@ fn test_find() {
     }
 
     assert_eq!(pset.find_vec(n_exp), Some((ix_exp, n_exp)));
+
+    // We also want to check that find works as expected when the prime we want is
+    // already in the list
+    assert_eq!(pset.find(500), (95, 503))
 }
 
 #[test]
