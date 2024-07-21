@@ -81,56 +81,34 @@ A prime generator, using the Trial Division method.
 
 Create with `let mut pset = TrialDivision::new()`, and then use `pset.iter()` to iterate over all
 primes.
-**/
+*/
 #[derive(Clone)]
 pub struct TrialDivision {
     lst: Vec<u64>,
 }
 
-const WHEEL30: [u64; 8] = [1, 7, 11, 13, 17, 19, 23, 29];
-
-#[derive(Copy, Clone)]
-struct Wheel30 {
-    base: u64,
-    ix: usize,
-}
-
-impl Wheel30 {
-    pub fn next(&mut self) -> u64 {
-        let value = self.base + WHEEL30[self.ix];
-        self.ix += 1;
-        if self.ix >= WHEEL30.len() {
-            self.ix = 0;
-            self.base += 30;
-        }
-        value
-    }
-}
-
-impl Default for Wheel30 {
-    fn default() -> Self {
-        Wheel30 { base: 0, ix: 1 }
-    }
+/*
+A factorization wheel that enables iteration over all positive integers that are coprime with
+all of the primes in `FIRST_PRIMES`.
+*/
+#[derive(Debug, Clone, Copy)]
+struct Wheel {
+    offset: u64,
+    index: usize,
+    factor: u64,
+    value: u64,
 }
 
 /**
-A prime generator, using the Sieve of Eratosthenes method. This is asymptotically more efficient
-than the Trial Division method, but slower earlier on.
+A prime generator, using the Sieve of Eratosthenes method.
 
 Create with `let mut pset = Sieve::new()`, and then use `pset.iter()` to iterate over all primes.
-**/
+*/
 #[derive(Clone)]
 pub struct Sieve {
     primes: Vec<u64>,
-    wheel: Wheel30,
-
-    // Keys are composites, values are prime factors.
-    //
-    // Every prime is in here once.
-    //
-    // Each entry corresponds to the last composite "crossed off" by the given prime,
-    // not including any composite less than the values in 'primes'.
-    sieve: BinaryHeap<Reverse<(u64, u64)>>,
+    wheel: Wheel,
+    sieve: BinaryHeap<Reverse<Wheel>>,
 }
 
 /// An iterator over generated primes. Created by `PrimeSet::iter` or
@@ -139,6 +117,68 @@ pub struct PrimeSetIter<'a, P: PrimeSet> {
     p: &'a mut P,
     n: usize,
     expand: bool,
+}
+
+impl Wheel {
+    const FIRST_PRIMES: [u64; 4] = [2, 3, 5, 7];
+    const BASE_LENGTH: usize = 48;
+    const CIRCUMFERENCE: u64 = Self::BASE[Self::BASE_LENGTH - 1] + 1;
+    const BASE: [u64; Self::BASE_LENGTH] = [
+        1, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101,
+        103, 107, 109, 113, 121, 127, 131, 137, 139, 143, 149, 151, 157, 163, 167, 169, 173, 179,
+        181, 187, 191, 193, 197, 199, 209,
+    ];
+
+    fn new() -> Self {
+        Self {
+            offset: 0,
+            index: 0,
+            factor: 1,
+            value: 0,
+        }
+    }
+}
+
+impl Default for Wheel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Iterator for Wheel {
+    type Item = u64;
+
+    fn next(&mut self) -> Option<u64> {
+        if self.index + 1 >= Self::BASE_LENGTH {
+            self.index = 0;
+            self.offset += Self::CIRCUMFERENCE;
+        } else {
+            self.index += 1;
+        }
+
+        self.value = self.factor * (self.offset + Self::BASE[self.index]);
+        Some(self.value)
+    }
+}
+
+impl PartialEq for Wheel {
+    fn eq(&self, other: &Self) -> bool {
+        self.value.eq(&other.value)
+    }
+}
+
+impl Eq for Wheel {}
+
+impl Ord for Wheel {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.value.cmp(&other.value)
+    }
+}
+
+impl PartialOrd for Wheel {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl TrialDivision {
@@ -190,52 +230,50 @@ impl Default for Sieve {
 
 impl Sieve {
     /// A new prime generator, primed with 2 and 3
-    pub fn new() -> Sieve {
-        Sieve {
-            primes: vec![2, 3, 5],
+    pub fn new() -> Self {
+        Self {
+            primes: Wheel::FIRST_PRIMES.to_vec(),
             sieve: BinaryHeap::new(),
-            wheel: Wheel30 { base: 0, ix: 1 },
+            wheel: Wheel::new(),
         }
     }
 
     // insert a prime and its composite. If the composite is already occupied, we'll increase
     // the composite by prime and put it there, repeating as necessary.
-    fn insert(&mut self, prime: u64, composite: u64) {
-        self.sieve.push(Reverse((composite, prime)));
+    fn insert(&mut self, prime: u64) {
+        let mut wheel = self.wheel;
+        wheel.factor = prime;
+        wheel.value = prime * prime;
+        self.primes.push(prime);
+        self.sieve.push(Reverse(wheel));
+    }
+
+    fn adjust_sieve(&mut self, n: u64) {
+        while let Some(mut wheel) = self.sieve.peek_mut() {
+            if wheel.0.value > n {
+                break;
+            }
+            let _ = wheel.0.next();
+        }
     }
 }
 
 impl PrimeSetBasics for Sieve {
     /// Finds one more prime, and adds it to the list
     fn expand(&mut self) {
-        let mut nextp = self.wheel.next();
         loop {
-            let (composite, factor) = match self.sieve.peek() {
-                None => {
-                    self.insert(nextp, nextp * nextp);
-                    self.primes.push(nextp);
-                    return;
-                }
-                Some(&Reverse(v)) => v,
+            let n = self.wheel.next().unwrap();
+            let Some(wheel) = self.sieve.peek() else {
+                self.insert(n);
+                return;
             };
-            match composite.cmp(&nextp) {
-                Less => {
-                    let _ = self.sieve.pop();
-                    self.insert(factor, composite + 2 * factor);
-                }
-                Equal => {
-                    let _ = self.sieve.pop();
-                    self.insert(factor, composite + 2 * factor);
-                    // 'nextp' isn't prime, so move to one that might be
-                    nextp = self.wheel.next();
-                }
-                Greater => {
-                    // nextp is prime!
-                    self.insert(nextp, nextp * nextp);
-                    self.primes.push(nextp);
-                    return;
-                }
+
+            if wheel.0.value > n {
+                self.insert(n);
+                return;
             }
+
+            self.adjust_sieve(n);
         }
     }
 
